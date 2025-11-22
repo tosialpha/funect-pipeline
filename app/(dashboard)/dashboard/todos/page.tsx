@@ -1,26 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
 
 interface Todo {
   id: string;
   title: string;
   completed: boolean;
-  assignedTo: "team" | "veeti" | "alppa";
-  dueDate: string;
+  assigned_to: "team" | "veeti" | "alppa";
+  due_date: string;
   description?: string;
 }
 
 export default function TodosPage() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     assignedTo: "team" as "team" | "veeti" | "alppa",
     dueDate: new Date().toISOString().split('T')[0],
   });
+
+  const supabase = createClient();
+
+  // Load todos on mount
+  useEffect(() => {
+    loadTodos();
+  }, []);
+
+  const loadTodos = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from("todos")
+      .select("*")
+      .order("due_date", { ascending: true });
+
+    if (error) {
+      console.error("Error loading todos:", error);
+    } else {
+      setTodos(data || []);
+    }
+    setIsLoading(false);
+  };
 
   // Generate next 7 days
   const getDays = () => {
@@ -39,19 +63,34 @@ export default function TodosPage() {
 
   const days = getDays();
 
-  const addTodo = () => {
+  const addTodo = async () => {
     if (!formData.title.trim()) return;
 
-    const todo: Todo = {
-      id: Date.now().toString(),
-      title: formData.title,
-      description: formData.description,
-      completed: false,
-      assignedTo: formData.assignedTo,
-      dueDate: formData.dueDate,
-    };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-    setTodos([...todos, todo]);
+    const { data, error } = await supabase
+      .from("todos")
+      .insert({
+        title: formData.title,
+        description: formData.description || null,
+        completed: false,
+        assigned_to: formData.assignedTo,
+        due_date: formData.dueDate,
+        user_id: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating todo:", error);
+      return;
+    }
+
+    if (data) {
+      setTodos([...todos, data]);
+    }
+
     setFormData({
       title: "",
       description: "",
@@ -61,18 +100,41 @@ export default function TodosPage() {
     setIsModalOpen(false);
   };
 
-  const toggleTodo = (id: string) => {
+  const toggleTodo = async (id: string) => {
+    const todo = todos.find(t => t.id === id);
+    if (!todo) return;
+
+    const { error } = await supabase
+      .from("todos")
+      .update({ completed: !todo.completed })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error toggling todo:", error);
+      return;
+    }
+
     setTodos(todos.map(todo =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     ));
   };
 
-  const deleteTodo = (id: string) => {
+  const deleteTodo = async (id: string) => {
+    const { error } = await supabase
+      .from("todos")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error deleting todo:", error);
+      return;
+    }
+
     setTodos(todos.filter(todo => todo.id !== id));
   };
 
   const getTodosForDate = (date: string) => {
-    return todos.filter(todo => todo.dueDate === date);
+    return todos.filter(todo => todo.due_date === date);
   };
 
   const getAssigneeColor = (assignedTo: string) => {
@@ -242,13 +304,13 @@ export default function TodosPage() {
                     </div>
                   ) : (
                     dayTodos.map((todo) => {
-                      const badge = getAssigneeBadge(todo.assignedTo);
+                      const badge = getAssigneeBadge(todo.assigned_to);
                       return (
                         <motion.div
                           key={todo.id}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className={`bg-[#0F1419] rounded-xl p-4 border-l-4 ${getAssigneeColor(todo.assignedTo)} border border-slate-800 hover:border-slate-700 transition-all cursor-pointer ${
+                          className={`bg-[#0F1419] rounded-xl p-4 border-l-4 ${getAssigneeColor(todo.assigned_to)} border border-slate-800 hover:border-slate-700 transition-all cursor-pointer ${
                             todo.completed ? 'opacity-50' : ''
                           }`}
                         >
