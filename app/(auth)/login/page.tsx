@@ -13,16 +13,18 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-10 shadow-2xl dark:bg-slate-900">
+    <div className="flex min-h-screen items-center justify-center bg-[#0F1419]">
+      <div className="w-full max-w-md space-y-8 rounded-2xl bg-[#1A1F2E] p-10 shadow-2xl border border-slate-800">
         <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Funect
+          <h1 className="text-4xl font-bold tracking-tight text-white">
+            <span className="inline-block bg-gradient-to-r from-teal-400 via-teal-300 to-teal-500 bg-clip-text text-transparent" style={{ transform: 'skewX(-6deg)' }}>
+              Funect
+            </span>
           </h1>
-          <p className="mt-2 text-lg text-slate-600 dark:text-slate-400">
+          <p className="mt-2 text-lg text-slate-400">
             Sales Pipeline
           </p>
-          <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-6 text-sm text-slate-400">
             Sign in to manage your sales prospects
           </p>
         </div>
@@ -31,7 +33,7 @@ export default async function LoginPage() {
           <LoginForm />
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-6 text-center text-xs text-slate-500">
           Internal tool for Funect team members only
         </p>
       </div>
