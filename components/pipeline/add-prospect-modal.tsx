@@ -23,8 +23,10 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
     priority: "medium",
     lead_source: "cold_outreach",
     responsible_person: "",
+    current_system: "",
   });
   const [customType, setCustomType] = useState("");
+  const [customSystem, setCustomSystem] = useState("");
 
   const supabase = createClient();
 
@@ -37,6 +39,7 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
       const dataToSubmit = {
         ...formData,
         type: formData.type === "Other" ? customType : formData.type,
+        current_system: formData.current_system === "Other" ? customSystem : formData.current_system,
       };
       const { error: dbError } = await supabase.from("prospects").insert([dataToSubmit]);
 
@@ -60,8 +63,10 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
         priority: "medium",
         lead_source: "cold_outreach",
         responsible_person: "",
+        current_system: "",
       });
       setCustomType("");
+      setCustomSystem("");
     } catch (err) {
       console.error("Error creating prospect:", err);
       setError("An unexpected error occurred");
@@ -250,6 +255,53 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-2">
+                Current System
+              </label>
+              <select
+                value={formData.current_system}
+                onChange={(e) => {
+                  setFormData({ ...formData, current_system: e.target.value });
+                  if (e.target.value !== "Other") {
+                    setCustomSystem("");
+                  }
+                }}
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+              >
+                <option value="">Select current system...</option>
+                <option value="VARAA HETI">VARAA HETI</option>
+                <option value="THRIL">THRIL</option>
+                <option value="MOMENSE">MOMENSE</option>
+                <option value="CLASS PASS">CLASS PASS</option>
+                <option value="APIX">APIX</option>
+                <option value="CONFIRMA">CONFIRMA</option>
+                <option value="WISE">WISE</option>
+                <option value="PLAYFI">PLAYFI</option>
+                <option value="TEHDEN">TEHDEN</option>
+                <option value="varaavuoro">varaavuoro</option>
+                <option value="Juliusvarausjärjestelmä">Juliusvarausjärjestelmä</option>
+                <option value="CINTOIA">CINTOIA</option>
+                <option value="avoinna 24">avoinna 24</option>
+                <option value="Slotti">Slotti</option>
+                <option value="Playtomic">Playtomic</option>
+                <option value="matchi">matchi</option>
+                <option value="Liikuttajat.fi">Liikuttajat.fi</option>
+                <option value="Vello solutions">Vello solutions</option>
+                <option value="Other">Other</option>
+              </select>
+              {formData.current_system === "Other" && (
+                <input
+                  type="text"
+                  value={customSystem}
+                  onChange={(e) => setCustomSystem(e.target.value)}
+                  required
+                  placeholder="Enter custom system name"
+                  className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all mt-2"
+                />
+              )}
             </div>
 
             <div className="md:col-span-2">
