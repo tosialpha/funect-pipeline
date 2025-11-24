@@ -255,7 +255,10 @@ export function KanbanBoard() {
                       {column.prospects.length === 0 ? (
                         <div className="text-center py-8 text-slate-500 text-sm">
                           <p>No prospects</p>
-                          <button className="mt-2 text-teal-400 hover:text-teal-300 flex items-center justify-center gap-1 mx-auto transition-colors">
+                          <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="mt-2 text-teal-400 hover:text-teal-300 flex items-center justify-center gap-1 mx-auto transition-colors"
+                          >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>

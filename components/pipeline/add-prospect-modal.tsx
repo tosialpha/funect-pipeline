@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Input } from "@/components/ui/input";
 
 interface AddProspectModalProps {
   isOpen: boolean;
@@ -25,6 +24,7 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
     lead_source: "cold_outreach",
     responsible_person: "",
   });
+  const [customType, setCustomType] = useState("");
 
   const supabase = createClient();
 
@@ -34,7 +34,11 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
     setError("");
 
     try {
-      const { error: dbError } = await supabase.from("prospects").insert([formData]);
+      const dataToSubmit = {
+        ...formData,
+        type: formData.type === "Other" ? customType : formData.type,
+      };
+      const { error: dbError } = await supabase.from("prospects").insert([dataToSubmit]);
 
       if (dbError) {
         console.error("Database error:", dbError);
@@ -57,6 +61,7 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
         lead_source: "cold_outreach",
         responsible_person: "",
       });
+      setCustomType("");
     } catch (err) {
       console.error("Error creating prospect:", err);
       setError("An unexpected error occurred");
@@ -69,15 +74,15 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#1A1F2E] rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto border border-slate-800">
+        <div className="sticky top-0 bg-[#1A1F2E] border-b border-slate-800 p-6 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-white">
             Add New Prospect
           </h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="text-slate-400 hover:text-white transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -87,120 +92,140 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="bg-red-900/20 border border-red-800 rounded-xl p-4">
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+                <p className="text-sm text-red-200">{error}</p>
               </div>
             </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
                 Company Name *
               </label>
-              <Input
+              <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
                 placeholder="e.g., Acme Corp"
-                className="w-full"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
                 Business Type *
               </label>
-              <Input
-                type="text"
+              <select
                 value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, type: e.target.value });
+                  if (e.target.value !== "Other") {
+                    setCustomType("");
+                  }
+                }}
                 required
-                placeholder="e.g., Tennis Club, Gym"
-                className="w-full"
-              />
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+              >
+                <option value="">Select business type...</option>
+                <option value="Golf">Golf</option>
+                <option value="Golf Simulator">Golf Simulator</option>
+                <option value="Yoga">Yoga</option>
+                <option value="Pilates">Pilates</option>
+                <option value="Other">Other</option>
+              </select>
+              {formData.type === "Other" && (
+                <input
+                  type="text"
+                  value={customType}
+                  onChange={(e) => setCustomType(e.target.value)}
+                  required
+                  placeholder="Enter custom business type"
+                  className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all mt-2"
+                />
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
                 Country *
               </label>
-              <Input
+              <input
                 type="text"
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                 required
                 placeholder="e.g., Sweden"
-                className="w-full"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
                 City *
               </label>
-              <Input
+              <input
                 type="text"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 required
                 placeholder="e.g., Stockholm"
-                className="w-full"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
                 Website
               </label>
-              <Input
+              <input
                 type="url"
                 value={formData.website}
                 onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                 placeholder="https://example.com"
-                className="w-full"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
                 Phone
               </label>
-              <Input
+              <input
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="+46 123 456 789"
-                className="w-full"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
                 Responsible Person
               </label>
-              <Input
+              <input
                 type="text"
                 value={formData.responsible_person}
                 onChange={(e) => setFormData({ ...formData, responsible_person: e.target.value })}
                 placeholder="e.g., John Doe"
-                className="w-full"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
                 Pipeline Stage
               </label>
               <select
                 value={formData.pipeline_stage}
                 onChange={(e) => setFormData({ ...formData, pipeline_stage: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               >
                 <option value="not_contacted">Not Contacted</option>
                 <option value="cold_called">Cold Called</option>
@@ -213,13 +238,13 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
                 Priority
               </label>
               <select
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               >
                 <option value="high">High</option>
                 <option value="medium">Medium</option>
@@ -228,13 +253,13 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
                 Lead Source
               </label>
               <select
                 value={formData.lead_source}
                 onChange={(e) => setFormData({ ...formData, lead_source: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               >
                 <option value="cold_outreach">Cold Outreach</option>
                 <option value="inbound">Inbound</option>
@@ -247,19 +272,19 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 border border-slate-700 text-slate-300 hover:bg-slate-800/50 rounded-xl font-medium transition-all disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20 disabled:opacity-50"
             >
               {isLoading ? "Creating..." : "Create Prospect"}
             </button>
