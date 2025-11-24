@@ -368,6 +368,7 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
                 <option value="MOMENSE">MOMENSE</option>
                 <option value="CLASS PASS">CLASS PASS</option>
                 <option value="APIX">APIX</option>
+                <option value="ASIO">ASIO</option>
                 <option value="CONFIRMA">CONFIRMA</option>
                 <option value="WISE">WISE</option>
                 <option value="PLAYFI">PLAYFI</option>
