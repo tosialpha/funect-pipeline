@@ -24,11 +24,36 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
     lead_source: "cold_outreach",
     responsible_person: "",
     current_system: "",
+    notes: "",
   });
   const [customType, setCustomType] = useState("");
   const [customSystem, setCustomSystem] = useState("");
+  const [customCountry, setCustomCountry] = useState("");
+  const [customCity, setCustomCity] = useState("");
 
   const supabase = createClient();
+
+  // City options by country (top 20 by population)
+  const getCitiesByCountry = (country: string): string[] => {
+    const cities: { [key: string]: string[] } = {
+      Finland: [
+        "Helsinki", "Espoo", "Tampere", "Vantaa", "Oulu", "Turku", "Jyväskylä",
+        "Lahti", "Kuopio", "Pori", "Kouvola", "Joensuu", "Lappeenranta", "Hämeenlinna",
+        "Vaasa", "Rovaniemi", "Seinäjoki", "Mikkeli", "Kotka", "Salo"
+      ],
+      Sweden: [
+        "Stockholm", "Gothenburg", "Malmö", "Uppsala", "Västerås", "Örebro", "Linköping",
+        "Helsingborg", "Jönköping", "Norrköping", "Lund", "Umeå", "Gävle", "Borås",
+        "Södertälje", "Eskilstuna", "Halmstad", "Växjö", "Karlstad", "Sundsvall"
+      ],
+      Estonia: [
+        "Tallinn", "Tartu", "Narva", "Pärnu", "Kohtla-Järve", "Viljandi", "Rakvere",
+        "Maardu", "Sillamäe", "Kuressaare", "Võru", "Valga", "Haapsalu", "Jõhvi",
+        "Paide", "Keila", "Kiviõli", "Tapa", "Põlva", "Türi"
+      ],
+    };
+    return cities[country] || [];
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +65,8 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
         ...formData,
         type: formData.type === "Other" ? customType : formData.type,
         current_system: formData.current_system === "Other" ? customSystem : formData.current_system,
+        country: formData.country === "Other" ? customCountry : formData.country,
+        city: formData.city === "Other" ? customCity : formData.city,
       };
       const { error: dbError } = await supabase.from("prospects").insert([dataToSubmit]);
 
@@ -64,9 +91,12 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
         lead_source: "cold_outreach",
         responsible_person: "",
         current_system: "",
+        notes: "",
       });
       setCustomType("");
       setCustomSystem("");
+      setCustomCountry("");
+      setCustomCity("");
     } catch (err) {
       console.error("Error creating prospect:", err);
       setError("An unexpected error occurred");
@@ -160,28 +190,89 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
               <label className="block text-sm font-medium text-slate-400 mb-2">
                 Country *
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.country}
-                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, country: e.target.value, city: "" });
+                  setCustomCity("");
+                  if (e.target.value !== "Other") {
+                    setCustomCountry("");
+                  }
+                }}
                 required
-                placeholder="e.g., Sweden"
-                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-              />
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+              >
+                <option value="">Select country...</option>
+                <option value="Finland">Finland</option>
+                <option value="Sweden">Sweden</option>
+                <option value="Estonia">Estonia</option>
+                <option value="Other">Other</option>
+              </select>
+              {formData.country === "Other" && (
+                <input
+                  type="text"
+                  value={customCountry}
+                  onChange={(e) => setCustomCountry(e.target.value)}
+                  required
+                  placeholder="Enter country name"
+                  className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all mt-2"
+                />
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-2">
                 City *
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, city: e.target.value });
+                  if (e.target.value !== "Other") {
+                    setCustomCity("");
+                  }
+                }}
                 required
-                placeholder="e.g., Stockholm"
-                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-              />
+                disabled={!formData.country || formData.country === "Other"}
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="">
+                  {!formData.country || formData.country === "Other"
+                    ? "Select country first..."
+                    : "Select city..."}
+                </option>
+                {formData.country && formData.country !== "Other" && getCitiesByCountry(formData.country).map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+                {formData.country && formData.country !== "Other" && (
+                  <option value="Other">Other</option>
+                )}
+              </select>
+              {formData.city === "Other" && (
+                <input
+                  type="text"
+                  value={customCity}
+                  onChange={(e) => setCustomCity(e.target.value)}
+                  required
+                  placeholder="Enter city name"
+                  className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all mt-2"
+                />
+              )}
+              {formData.country === "Other" && (
+                <input
+                  type="text"
+                  value={customCity}
+                  onChange={(e) => {
+                    setCustomCity(e.target.value);
+                    setFormData({ ...formData, city: e.target.value });
+                  }}
+                  required
+                  placeholder="Enter city name"
+                  className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                />
+              )}
             </div>
 
             <div>
@@ -321,6 +412,19 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
                 <option value="event">Event</option>
                 <option value="other">Other</option>
               </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
+                Notes
+              </label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Add any additional notes about this prospect..."
+                rows={3}
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all resize-none"
+              />
             </div>
           </div>
 
