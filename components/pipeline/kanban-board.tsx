@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AddProspectModal } from "./add-prospect-modal";
 import { ProspectDetailModal } from "./prospect-detail-modal";
+import { ScheduleDemoModal } from "./schedule-demo-modal";
 
 type PipelineStage =
   | "not_contacted"
@@ -89,6 +90,13 @@ export function KanbanBoard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProspectId, setSelectedProspectId] = useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [scheduleDemoModal, setScheduleDemoModal] = useState<{
+    isOpen: boolean;
+    prospectId?: string;
+    prospectName?: string;
+    demoType?: "first_demo" | "second_demo";
+    targetStage?: PipelineStage;
+  }>({ isOpen: false });
   const supabase = createClient();
 
   const loadProspects = async () => {
@@ -151,6 +159,24 @@ export function KanbanBoard() {
       : [...destColumn.prospects];
 
     const [movedProspect] = sourceProspects.splice(source.index, 1);
+
+    // Check if moving to a demo stage
+    const isDemoStage = destination.droppableId === "first_demo" || destination.droppableId === "second_demo";
+    const isMovingToNewStage = source.droppableId !== destination.droppableId;
+
+    if (isDemoStage && isMovingToNewStage) {
+      // Show scheduling modal instead of immediately updating
+      setScheduleDemoModal({
+        isOpen: true,
+        prospectId: movedProspect.id,
+        prospectName: movedProspect.name,
+        demoType: destination.droppableId as "first_demo" | "second_demo",
+        targetStage: destination.droppableId as PipelineStage,
+      });
+      // Don't update the UI yet - wait for the modal to be confirmed or cancelled
+      return;
+    }
+
     destProspects.splice(destination.index, 0, movedProspect);
 
     const newColumns = columns.map((col) => {
@@ -178,6 +204,25 @@ export function KanbanBoard() {
         loadProspects();
       }
     }
+  };
+
+  const handleDemoScheduled = async () => {
+    // Update the prospect's pipeline stage
+    if (scheduleDemoModal.prospectId && scheduleDemoModal.targetStage) {
+      const { error } = await supabase
+        .from("prospects")
+        .update({ pipeline_stage: scheduleDemoModal.targetStage })
+        .eq("id", scheduleDemoModal.prospectId);
+
+      if (error) {
+        console.error("Error updating prospect:", error);
+      }
+
+      // Reload prospects to reflect the changes
+      loadProspects();
+    }
+
+    setScheduleDemoModal({ isOpen: false });
   };
 
   return (
@@ -217,6 +262,20 @@ export function KanbanBoard() {
         }}
         onSuccess={loadProspects}
       />
+
+      {scheduleDemoModal.prospectId && scheduleDemoModal.prospectName && scheduleDemoModal.demoType && (
+        <ScheduleDemoModal
+          isOpen={scheduleDemoModal.isOpen}
+          onClose={() => {
+            setScheduleDemoModal({ isOpen: false });
+            loadProspects(); // Reload to restore the original state
+          }}
+          prospectId={scheduleDemoModal.prospectId}
+          prospectName={scheduleDemoModal.prospectName}
+          demoType={scheduleDemoModal.demoType}
+          onSuccess={handleDemoScheduled}
+        />
+      )}
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex gap-4 overflow-x-auto pb-4">

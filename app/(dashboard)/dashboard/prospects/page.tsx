@@ -1,15 +1,30 @@
-import { createClient } from "@/lib/supabase/server";
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { ProspectsTable } from "@/components/prospects/prospects-table";
-import { redirect } from "next/navigation";
+import { AddProspectModal } from "@/components/pipeline/add-prospect-modal";
 
-export const dynamic = "force-dynamic";
+export default function ProspectsPage() {
+  const [prospects, setProspects] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const supabase = createClient();
 
-export default async function ProspectsPage() {
-  const supabase = await createClient();
-  const { data: prospects } = await supabase
-    .from("prospects")
-    .select("*")
-    .order("created_at", { ascending: false });
+  useEffect(() => {
+    loadProspects();
+  }, []);
+
+  const loadProspects = async () => {
+    setIsLoading(true);
+    const { data } = await supabase
+      .from("prospects")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    setProspects(data || []);
+    setIsLoading(false);
+  };
 
   return (
     <div className="p-8">
@@ -22,13 +37,22 @@ export default async function ProspectsPage() {
             Manage all your sales prospects in one place
           </p>
         </div>
-        <button className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20 flex items-center gap-2">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20 flex items-center gap-2"
+        >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Add Prospect
         </button>
       </div>
+
+      <AddProspectModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={loadProspects}
+      />
 
       {/* Filters */}
       <div className="bg-[#1A1F2E] rounded-2xl border border-slate-800 p-4 mb-6">

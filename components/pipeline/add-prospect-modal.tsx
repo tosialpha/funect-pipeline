@@ -19,6 +19,7 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
     city: "",
     website: "",
     phone: "",
+    email: "",
     pipeline_stage: "not_contacted",
     priority: "medium",
     lead_source: "cold_outreach",
@@ -86,6 +87,7 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
         city: "",
         website: "",
         phone: "",
+        email: "",
         pipeline_stage: "not_contacted",
         priority: "medium",
         lead_source: "cold_outreach",
@@ -297,6 +299,19 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="+46 123 456 789"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="contact@example.com"
                 className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               />
             </div>

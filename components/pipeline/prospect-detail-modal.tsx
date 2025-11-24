@@ -22,6 +22,7 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
     city: "",
     website: "",
     phone: "",
+    email: "",
     pipeline_stage: "not_contacted",
     priority: "medium",
     lead_source: "cold_outreach",
@@ -274,6 +275,22 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
                 />
               ) : (
                 <p className="text-white font-medium">{formData.phone || "-"}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-2">
+                Email
+              </label>
+              {isEditing ? (
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full"
+                />
+              ) : (
+                <p className="text-white font-medium">{formData.email || "-"}</p>
               )}
             </div>
 
