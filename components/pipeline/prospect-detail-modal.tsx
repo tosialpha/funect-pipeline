@@ -60,6 +60,7 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
         city: data.city || "",
         website: data.website || "",
         phone: data.phone || "",
+        email: data.email || "",
         pipeline_stage: data.pipeline_stage || "not_contacted",
         priority: data.priority || "medium",
         lead_source: data.lead_source || "cold_outreach",
