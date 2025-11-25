@@ -411,7 +411,7 @@ export default function TodosPage() {
                                 {todo.title}
                               </h4>
                               {todo.description && (
-                                <p className="text-xs text-slate-400 mb-2">{todo.description}</p>
+                                <p className="text-xs text-slate-400 mb-2 whitespace-pre-line">{todo.description}</p>
                               )}
                               <div className="flex items-center gap-2">
                                 <span className={`px-2 py-0.5 text-xs font-semibold ${badge.bg} ${badge.text} rounded border ${badge.border}`}>
