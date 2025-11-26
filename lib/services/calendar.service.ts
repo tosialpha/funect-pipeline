@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { getColorForPerson, AssignedPerson } from "@/lib/constants/person-colors";
 
 export type EventType = "task" | "demo" | "meeting" | "call" | "other";
 
@@ -14,6 +15,7 @@ export interface CalendarEvent {
   user_id: string;
   location?: string;
   color: string;
+  assigned_to: AssignedPerson;
   created_at: string;
   updated_at: string;
   // Relations
@@ -34,7 +36,7 @@ export interface CreateEventInput {
   all_day?: boolean;
   prospect_id?: string;
   location?: string;
-  color?: string;
+  assigned_to?: AssignedPerson;
 }
 
 export interface UpdateEventInput extends Partial<CreateEventInput> {
@@ -117,6 +119,10 @@ export class CalendarService {
       throw new Error("User not authenticated");
     }
 
+    // Derive color from assigned_to
+    const assignedTo = input.assigned_to || "team";
+    const color = getColorForPerson(assignedTo);
+
     const { data, error } = await this.supabase
       .from("calendar_events")
       .insert({
@@ -128,7 +134,8 @@ export class CalendarService {
         all_day: input.all_day || false,
         prospect_id: input.prospect_id || null,
         location: input.location || null,
-        color: input.color || "#00C896",
+        assigned_to: assignedTo,
+        color: color,
         user_id: user.id,
       })
       .select()
@@ -162,7 +169,10 @@ export class CalendarService {
       updateData.end_time = new Date(updates.end_time).toISOString();
     if (updates.all_day !== undefined) updateData.all_day = updates.all_day;
     if (updates.location !== undefined) updateData.location = updates.location;
-    if (updates.color !== undefined) updateData.color = updates.color;
+    if (updates.assigned_to !== undefined) {
+      updateData.assigned_to = updates.assigned_to;
+      updateData.color = getColorForPerson(updates.assigned_to);
+    }
 
     const { data, error } = await this.supabase
       .from("calendar_events")
@@ -186,7 +196,8 @@ export class CalendarService {
     const { error } = await this.supabase
       .from("calendar_events")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .select();
 
     if (error) {
       console.error("Error deleting event:", error);
@@ -202,8 +213,12 @@ export class CalendarService {
     demoType: "first_demo" | "second_demo",
     startTime: Date,
     endTime: Date,
-    prospectName: string
+    prospectName: string,
+    responsiblePerson?: string
   ): Promise<CalendarEvent> {
+    // Determine assigned_to from responsible person or default to 'team'
+    const assignedTo = (responsiblePerson?.toLowerCase() || "team") as AssignedPerson;
+
     // Create the calendar event
     const event = await this.createEvent({
       title: `${demoType === "first_demo" ? "First" : "Second"} Demo - ${prospectName}`,
@@ -212,7 +227,7 @@ export class CalendarService {
       start_time: startTime,
       end_time: endTime,
       prospect_id: prospectId,
-      color: demoType === "first_demo" ? "#A855F7" : "#14B8A6",
+      assigned_to: assignedTo,
     });
 
     // Update the prospect with the scheduled date

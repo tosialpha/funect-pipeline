@@ -23,6 +23,7 @@ interface Prospect {
   avatar?: string;
   lastActivity?: string;
   status: string;
+  responsible_person?: string;
 }
 
 interface Column {
@@ -96,6 +97,7 @@ export function KanbanBoard() {
     prospectName?: string;
     demoType?: "first_demo" | "second_demo";
     targetStage?: PipelineStage;
+    responsiblePerson?: string;
   }>({ isOpen: false });
   const supabase = createClient();
 
@@ -121,6 +123,7 @@ export function KanbanBoard() {
             ? new Date(p.last_activity_date).toLocaleDateString()
             : undefined,
           status: p.priority.toUpperCase(),
+          responsible_person: p.responsible_person,
         }));
 
       return {
@@ -172,6 +175,7 @@ export function KanbanBoard() {
         prospectName: movedProspect.name,
         demoType: destination.droppableId as "first_demo" | "second_demo",
         targetStage: destination.droppableId as PipelineStage,
+        responsiblePerson: movedProspect.responsible_person,
       });
       // Don't update the UI yet - wait for the modal to be confirmed or cancelled
       return;
@@ -273,6 +277,7 @@ export function KanbanBoard() {
           prospectId={scheduleDemoModal.prospectId}
           prospectName={scheduleDemoModal.prospectName}
           demoType={scheduleDemoModal.demoType}
+          responsiblePerson={scheduleDemoModal.responsiblePerson}
           onSuccess={handleDemoScheduled}
         />
       )}

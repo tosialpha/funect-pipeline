@@ -300,14 +300,31 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
                 Responsible Person
               </label>
               {isEditing ? (
-                <Input
-                  type="text"
+                <select
                   value={formData.responsible_person}
                   onChange={(e) => setFormData({ ...formData, responsible_person: e.target.value })}
-                  className="w-full"
-                />
+                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                >
+                  <option value="">Not assigned</option>
+                  <option value="team">Team</option>
+                  <option value="veeti">Veeti</option>
+                  <option value="alppa">Alppa</option>
+                </select>
               ) : (
-                <p className="text-white font-medium">{formData.responsible_person || "-"}</p>
+                <span className={`inline-block px-2.5 py-1 text-sm font-semibold rounded-lg border ${
+                  formData.responsible_person === 'veeti'
+                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                    : formData.responsible_person === 'alppa'
+                    ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                    : formData.responsible_person === 'team'
+                    ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                    : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                }`}>
+                  {formData.responsible_person === 'veeti' ? 'Veeti'
+                    : formData.responsible_person === 'alppa' ? 'Alppa'
+                    : formData.responsible_person === 'team' ? 'Team'
+                    : 'Not assigned'}
+                </span>
               )}
             </div>
 

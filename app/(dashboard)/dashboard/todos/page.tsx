@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { createClient } from "@/lib/supabase/client";
 import { calendarService } from "@/lib/services/calendar.service";
+import { TaskDetailModal } from "@/components/todos/task-detail-modal";
 
 interface Todo {
   id: string;
@@ -12,12 +13,15 @@ interface Todo {
   assigned_to: "team" | "veeti" | "alppa";
   due_date: string;
   description?: string;
+  display_order: number;
 }
 
 export default function TodosPage() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -40,7 +44,8 @@ export default function TodosPage() {
     const { data, error } = await supabase
       .from("todos")
       .select("*")
-      .order("due_date", { ascending: true });
+      .order("due_date", { ascending: true })
+      .order("display_order", { ascending: true });
 
     if (error) {
       console.error("Error loading todos:", error);
@@ -73,6 +78,12 @@ export default function TodosPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Get the max display_order for the target date to add at the end
+    const todosForDate = todos.filter(t => t.due_date === formData.dueDate);
+    const maxOrder = todosForDate.length > 0
+      ? Math.max(...todosForDate.map(t => t.display_order))
+      : -1;
+
     const { data, error } = await supabase
       .from("todos")
       .insert({
@@ -82,6 +93,7 @@ export default function TodosPage() {
         assigned_to: formData.assignedTo,
         due_date: formData.dueDate,
         user_id: user.id,
+        display_order: maxOrder + 1,
       })
       .select()
       .single();
@@ -110,7 +122,7 @@ export default function TodosPage() {
             event_type: "task",
             start_time: startDateTime,
             end_time: endDateTime,
-            color: "#00C896",
+            assigned_to: formData.assignedTo,
           });
         } catch (calendarError) {
           console.error("Error adding to calendar:", calendarError);
@@ -164,8 +176,148 @@ export default function TodosPage() {
     setTodos(todos.filter(todo => todo.id !== id));
   };
 
+  const onDragEnd = async (result: DropResult) => {
+    const { source, destination } = result;
+
+    // Dropped outside a droppable area
+    if (!destination) return;
+
+    // Dropped in the same position
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+
+    const sourceDate = source.droppableId;
+    const destDate = destination.droppableId;
+
+    // Get todos for source and destination dates (sorted)
+    const sourceTodos = [...todos]
+      .filter((t) => t.due_date === sourceDate)
+      .sort((a, b) => a.display_order - b.display_order);
+
+    const destTodos = sourceDate === destDate
+      ? sourceTodos
+      : [...todos]
+          .filter((t) => t.due_date === destDate)
+          .sort((a, b) => a.display_order - b.display_order);
+
+    // Remove from source
+    const [movedTodo] = sourceTodos.splice(source.index, 1);
+    if (!movedTodo) return;
+
+    // Add to destination
+    if (sourceDate === destDate) {
+      sourceTodos.splice(destination.index, 0, movedTodo);
+    } else {
+      destTodos.splice(destination.index, 0, movedTodo);
+    }
+
+    // Build new todos array with updated dates and orders
+    const updatedTodo = { ...movedTodo, due_date: destDate, display_order: destination.index };
+
+    const newTodos = todos.map((todo) => {
+      if (todo.id === movedTodo.id) {
+        return updatedTodo;
+      }
+      // Update display_order for other todos in affected columns
+      if (sourceDate === destDate) {
+        // Same column - use new order from sourceTodos
+        const newIndex = sourceTodos.findIndex((t) => t.id === todo.id);
+        if (newIndex !== -1) {
+          return { ...todo, display_order: newIndex };
+        }
+      } else {
+        // Different columns
+        const sourceIndex = sourceTodos.findIndex((t) => t.id === todo.id);
+        if (sourceIndex !== -1) {
+          return { ...todo, display_order: sourceIndex };
+        }
+        const destIndex = destTodos.findIndex((t) => t.id === todo.id);
+        if (destIndex !== -1) {
+          return { ...todo, display_order: destIndex };
+        }
+      }
+      return todo;
+    });
+
+    // Update UI immediately
+    setTodos(newTodos);
+
+    // Persist all affected todos to database
+    try {
+      // Collect all todos that need updating
+      const updates: { id: string; due_date: string; display_order: number }[] = [];
+
+      // Add the moved todo
+      updates.push({
+        id: movedTodo.id,
+        due_date: destDate,
+        display_order: destination.index,
+      });
+
+      // Update all todos in source column (if different from dest)
+      if (sourceDate !== destDate) {
+        sourceTodos.forEach((todo, index) => {
+          updates.push({
+            id: todo.id,
+            due_date: sourceDate,
+            display_order: index,
+          });
+        });
+      }
+
+      // Update all todos in destination column
+      const finalDestTodos = sourceDate === destDate ? sourceTodos : destTodos;
+      finalDestTodos.forEach((todo, index) => {
+        if (todo.id !== movedTodo.id) {
+          updates.push({
+            id: todo.id,
+            due_date: destDate,
+            display_order: index,
+          });
+        }
+      });
+
+      // Execute all updates
+      for (const update of updates) {
+        const { error } = await supabase
+          .from("todos")
+          .update({
+            due_date: update.due_date,
+            display_order: update.display_order,
+          })
+          .eq("id", update.id);
+
+        if (error) {
+          console.error("Error updating todo:", error);
+        }
+      }
+    } catch (error) {
+      console.error("Error updating todos:", error);
+      loadTodos();
+    }
+  };
+
   const getTodosForDate = (date: string) => {
-    return todos.filter(todo => todo.due_date === date);
+    return todos
+      .filter(todo => todo.due_date === date)
+      .sort((a, b) => a.display_order - b.display_order);
+  };
+
+  const handleTodoClick = (todo: Todo) => {
+    setSelectedTodo(todo);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleTodoUpdate = (updatedTodo: Todo) => {
+    setTodos(todos.map(t => t.id === updatedTodo.id ? updatedTodo : t));
+  };
+
+  const handleTodoDelete = (todoId: string) => {
+    setTodos(todos.filter(t => t.id !== todoId));
   };
 
   const getAssigneeColor = (assignedTo: string) => {
@@ -353,91 +505,142 @@ export default function TodosPage() {
       )}
 
       {/* Calendar View */}
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {days.map((day) => {
-          const dayTodos = getTodosForDate(day.date);
-          return (
-            <div
-              key={day.date}
-              className="flex-shrink-0 w-80"
-            >
-              <div className="bg-[#1A1F2E] rounded-2xl p-4 border border-slate-800">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-1 h-6 rounded-full ${day.isToday ? 'bg-teal-500' : 'bg-slate-600'}`} />
-                    <h3 className="font-semibold text-white">
-                      {day.label}
-                    </h3>
-                    <span className="px-2.5 py-0.5 text-xs font-semibold bg-slate-800 text-slate-300 rounded-lg">
-                      {dayTodos.length}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-3 min-h-[200px]">
-                  {dayTodos.length === 0 ? (
-                    <div className="text-center py-8 text-slate-500 text-sm">
-                      <p>No tasks</p>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {days.map((day) => {
+            const dayTodos = getTodosForDate(day.date);
+            return (
+              <div
+                key={day.date}
+                className="flex-shrink-0 w-80"
+              >
+                <div className="bg-[#1A1F2E] rounded-2xl p-4 border border-slate-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-1 h-6 rounded-full ${day.isToday ? 'bg-teal-500' : 'bg-slate-600'}`} />
+                      <h3 className="font-semibold text-white">
+                        {day.label}
+                      </h3>
+                      <span className="px-2.5 py-0.5 text-xs font-semibold bg-slate-800 text-slate-300 rounded-lg">
+                        {dayTodos.length}
+                      </span>
                     </div>
-                  ) : (
-                    dayTodos.map((todo) => {
-                      const badge = getAssigneeBadge(todo.assigned_to);
-                      return (
-                        <motion.div
-                          key={todo.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`bg-[#0F1419] rounded-xl p-4 border-l-4 ${getAssigneeColor(todo.assigned_to)} border border-slate-800 hover:border-slate-700 transition-all cursor-pointer ${
-                            todo.completed ? 'opacity-50' : ''
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <button
-                              onClick={() => toggleTodo(todo.id)}
-                              className={`w-5 h-5 rounded-md border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-                                todo.completed
-                                  ? 'bg-teal-500 border-teal-500'
-                                  : 'border-slate-600 hover:border-teal-500'
-                              }`}
-                            >
-                              {todo.completed && (
-                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
-                            </button>
-                            <div className="flex-1 min-w-0">
-                              <h4 className={`font-semibold text-white text-sm mb-1 ${todo.completed ? 'line-through' : ''}`}>
-                                {todo.title}
-                              </h4>
-                              {todo.description && (
-                                <p className="text-xs text-slate-400 mb-2 whitespace-pre-line">{todo.description}</p>
-                              )}
-                              <div className="flex items-center gap-2">
-                                <span className={`px-2 py-0.5 text-xs font-semibold ${badge.bg} ${badge.text} rounded border ${badge.border}`}>
-                                  {badge.label}
-                                </span>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => deleteTodo(todo.id)}
-                              className="text-slate-400 hover:text-red-400 transition-colors flex-shrink-0"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
+                  </div>
+
+                  <Droppable droppableId={day.date}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`space-y-3 min-h-[200px] rounded-xl p-2 -m-2 transition-colors ${
+                          snapshot.isDraggingOver ? 'bg-teal-500/10 ring-2 ring-teal-500/30' : ''
+                        }`}
+                      >
+                        {dayTodos.map((todo, index) => {
+                            const badge = getAssigneeBadge(todo.assigned_to);
+                            return (
+                              <Draggable
+                                key={todo.id}
+                                draggableId={todo.id}
+                                index={index}
+                              >
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    style={{
+                                      ...provided.draggableProps.style,
+                                      transition: snapshot.isDropAnimating
+                                        ? 'all 0.2s ease'
+                                        : provided.draggableProps.style?.transition,
+                                    }}
+                                    onClick={() => handleTodoClick(todo)}
+                                    className={`bg-[#0F1419] rounded-xl p-4 border-l-4 ${getAssigneeColor(todo.assigned_to)} border border-slate-800 hover:border-slate-700 cursor-grab ${
+                                      todo.completed ? 'opacity-50' : ''
+                                    } ${
+                                      snapshot.isDragging
+                                        ? 'shadow-2xl shadow-teal-500/20 ring-2 ring-teal-500 z-50'
+                                        : ''
+                                    }`}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleTodo(todo.id);
+                                        }}
+                                        className={`w-5 h-5 rounded-md border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                                          todo.completed
+                                            ? 'bg-teal-500 border-teal-500'
+                                            : 'border-slate-600 hover:border-teal-500'
+                                        }`}
+                                      >
+                                        {todo.completed && (
+                                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                          </svg>
+                                        )}
+                                      </button>
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className={`font-semibold text-white text-sm mb-1 ${todo.completed ? 'line-through' : ''}`}>
+                                          {todo.title}
+                                        </h4>
+                                        {todo.description && (
+                                          <p className="text-xs text-slate-400 mb-2 whitespace-pre-line">{todo.description}</p>
+                                        )}
+                                        <div className="flex items-center gap-2">
+                                          <span className={`px-2 py-0.5 text-xs font-semibold ${badge.bg} ${badge.text} rounded border ${badge.border}`}>
+                                            {badge.label}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          deleteTodo(todo.id);
+                                        }}
+                                        className="text-slate-400 hover:text-red-400 transition-colors flex-shrink-0"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </Draggable>
+                            );
+                          })}
+                        {provided.placeholder}
+                        {dayTodos.length === 0 && (
+                          <div className={`text-center py-8 text-slate-500 text-sm rounded-xl border-2 border-dashed ${
+                            snapshot.isDraggingOver ? 'border-teal-500/50 bg-teal-500/5' : 'border-transparent'
+                          }`}>
+                            <p>{snapshot.isDraggingOver ? 'Drop here' : 'No tasks'}</p>
                           </div>
-                        </motion.div>
-                      );
-                    })
-                  )}
+                        )}
+                      </div>
+                    )}
+                  </Droppable>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </DragDropContext>
+
+      {/* Task Detail Modal */}
+      <TaskDetailModal
+        todo={selectedTodo}
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedTodo(null);
+        }}
+        onUpdate={handleTodoUpdate}
+        onDelete={handleTodoDelete}
+      />
     </div>
   );
 }

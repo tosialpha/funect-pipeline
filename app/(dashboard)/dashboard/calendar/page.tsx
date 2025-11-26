@@ -1,17 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { calendarService, CalendarEvent, EventType } from "@/lib/services/calendar.service";
+import { PERSON_CONFIG, PERSON_OPTIONS, AssignedPerson } from "@/lib/constants/person-colors";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const PERSONS: AssignedPerson[] = ["team", "veeti", "alppa"];
 
 interface EventModalData {
   isOpen: boolean;
   date?: Date;
   time?: string;
   event?: CalendarEvent;
+  isEditing?: boolean;
 }
 
 export default function CalendarPage() {
@@ -20,6 +23,7 @@ export default function CalendarPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"week" | "day">("week");
   const [eventModal, setEventModal] = useState<EventModalData>({ isOpen: false });
+  const [visiblePersons, setVisiblePersons] = useState<AssignedPerson[]>(["team", "veeti", "alppa"]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -28,12 +32,21 @@ export default function CalendarPage() {
     startTime: "09:00",
     endTime: "10:00",
     location: "",
-    color: "#00C896",
+    assignedTo: "team" as AssignedPerson,
   });
+  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadEvents();
   }, [currentDate, viewMode]);
+
+  // Scroll to 8:00 AM on initial load
+  useEffect(() => {
+    if (gridRef.current) {
+      // 8 hours * 60px per hour = 480px
+      gridRef.current.scrollTop = 8 * 60;
+    }
+  }, []);
 
   const loadEvents = async () => {
     setIsLoading(true);
@@ -90,6 +103,21 @@ export default function CalendarPage() {
         eventDate.getMonth() === date.getMonth() &&
         eventDate.getFullYear() === date.getFullYear()
       );
+    });
+  };
+
+  const getDayEventsForPerson = (date: Date, person: AssignedPerson) => {
+    return getDayEvents(date).filter((event) => event.assigned_to === person);
+  };
+
+  const togglePersonVisibility = (person: AssignedPerson) => {
+    setVisiblePersons((prev) => {
+      if (prev.includes(person)) {
+        // Don't allow removing the last person
+        if (prev.length === 1) return prev;
+        return prev.filter((p) => p !== person);
+      }
+      return [...prev, person];
     });
   };
 
@@ -161,7 +189,7 @@ export default function CalendarPage() {
         start_time: startDateTime,
         end_time: endDateTime,
         location: formData.location || undefined,
-        color: formData.color,
+        assigned_to: formData.assignedTo,
       });
 
       setEventModal({ isOpen: false });
@@ -173,7 +201,7 @@ export default function CalendarPage() {
         startTime: "09:00",
         endTime: "10:00",
         location: "",
-        color: "#00C896",
+        assignedTo: "team",
       });
       loadEvents();
     } catch (error) {
@@ -182,11 +210,71 @@ export default function CalendarPage() {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
+    if (!confirm("Are you sure you want to delete this event?")) {
+      return;
+    }
     try {
       await calendarService.deleteEvent(eventId);
+      await loadEvents();
+    } catch (error: any) {
+      console.error("Error deleting event:", error);
+      alert(`Failed to delete event: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleEditEvent = (event: CalendarEvent) => {
+    const startDate = new Date(event.start_time);
+    const endDate = new Date(event.end_time);
+
+    setFormData({
+      title: event.title,
+      description: event.description || "",
+      eventType: event.event_type,
+      date: startDate.toISOString().split('T')[0],
+      startTime: `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`,
+      endTime: `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`,
+      location: event.location || "",
+      assignedTo: event.assigned_to || "team",
+    });
+    setEventModal({ isOpen: true, event, isEditing: true });
+  };
+
+  const handleUpdateEvent = async () => {
+    if (!formData.title.trim() || !eventModal.event) return;
+
+    try {
+      const [year, month, day] = formData.date.split('-').map(Number);
+      const [startHour, startMinute] = formData.startTime.split(':').map(Number);
+      const [endHour, endMinute] = formData.endTime.split(':').map(Number);
+
+      const startDateTime = new Date(year, month - 1, day, startHour, startMinute);
+      const endDateTime = new Date(year, month - 1, day, endHour, endMinute);
+
+      await calendarService.updateEvent({
+        id: eventModal.event.id,
+        title: formData.title,
+        description: formData.description || undefined,
+        event_type: formData.eventType,
+        start_time: startDateTime,
+        end_time: endDateTime,
+        location: formData.location || undefined,
+        assigned_to: formData.assignedTo,
+      });
+
+      setEventModal({ isOpen: false });
+      setFormData({
+        title: "",
+        description: "",
+        eventType: "task",
+        date: new Date().toISOString().split('T')[0],
+        startTime: "09:00",
+        endTime: "10:00",
+        location: "",
+        assignedTo: "team",
+      });
       loadEvents();
     } catch (error) {
-      console.error("Error deleting event:", error);
+      console.error("Error updating event:", error);
     }
   };
 
@@ -207,6 +295,34 @@ export default function CalendarPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Person Filter Toggles */}
+          <div className="flex items-center gap-2 bg-[#1A1F2E] rounded-xl p-1 border border-slate-800">
+            {PERSONS.map((person) => {
+              const config = PERSON_CONFIG[person];
+              const isVisible = visiblePersons.includes(person);
+              return (
+                <button
+                  key={person}
+                  onClick={() => togglePersonVisibility(person)}
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                    isVisible
+                      ? "text-white"
+                      : "text-slate-500 hover:text-slate-300"
+                  }`}
+                  style={{
+                    backgroundColor: isVisible ? config.color + "30" : "transparent",
+                  }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: config.color }}
+                  />
+                  {config.label}
+                </button>
+              );
+            })}
+          </div>
+
           <div className="flex items-center gap-2 bg-[#1A1F2E] rounded-xl p-1 border border-slate-800">
             <button
               onClick={() => setViewMode("week")}
@@ -297,35 +413,60 @@ export default function CalendarPage() {
 
       {/* Calendar Grid */}
       <div className="flex-1 bg-[#1A1F2E] rounded-2xl border border-slate-800 overflow-hidden flex flex-col">
-        {/* Day Headers */}
-        <div className={`grid ${viewMode === "day" ? "grid-cols-[60px_1fr]" : "grid-cols-[60px_repeat(7,1fr)]"} border-b border-slate-800 bg-[#0F1419]`}>
-          <div className="p-3"></div>
-          {weekDays.map((day, i) => {
-            const isToday =
-              day.getDate() === today.getDate() &&
-              day.getMonth() === today.getMonth() &&
-              day.getFullYear() === today.getFullYear();
-            return (
-              <div key={i} className="p-3 text-center border-l border-slate-800">
-                <div className="text-xs text-slate-400 mb-1">
-                  {DAYS_OF_WEEK[day.getDay()]}
+        {/* Day Headers - Two rows: day name/date, then person sub-columns */}
+        <div className="border-b border-slate-800 bg-[#0F1419]">
+          {/* Main day headers */}
+          <div className={`grid ${viewMode === "day" ? "grid-cols-[60px_1fr]" : "grid-cols-[60px_repeat(7,1fr)]"}`}>
+            <div className="p-3"></div>
+            {weekDays.map((day, i) => {
+              const isToday =
+                day.getDate() === today.getDate() &&
+                day.getMonth() === today.getMonth() &&
+                day.getFullYear() === today.getFullYear();
+              return (
+                <div key={i} className="p-2 text-center border-l border-slate-800">
+                  <div className="text-xs text-slate-400 mb-1">
+                    {DAYS_OF_WEEK[day.getDay()]}
+                  </div>
+                  <div
+                    className={`text-lg font-semibold ${
+                      isToday
+                        ? "w-8 h-8 mx-auto bg-teal-500 text-white rounded-full flex items-center justify-center"
+                        : "text-white"
+                    }`}
+                  >
+                    {day.getDate()}
+                  </div>
                 </div>
-                <div
-                  className={`text-lg font-semibold ${
-                    isToday
-                      ? "w-8 h-8 mx-auto bg-teal-500 text-white rounded-full flex items-center justify-center"
-                      : "text-white"
-                  }`}
-                >
-                  {day.getDate()}
-                </div>
+              );
+            })}
+          </div>
+          {/* Person sub-column headers */}
+          <div className={`grid ${viewMode === "day" ? "grid-cols-[60px_1fr]" : "grid-cols-[60px_repeat(7,1fr)]"} border-t border-slate-800/50`}>
+            <div></div>
+            {weekDays.map((_, dayIndex) => (
+              <div key={dayIndex} className="flex border-l border-slate-800">
+                {visiblePersons.map((person, personIndex) => {
+                  const config = PERSON_CONFIG[person];
+                  return (
+                    <div
+                      key={person}
+                      className={`flex-1 py-1 text-center text-xs font-medium ${
+                        personIndex > 0 ? "border-l border-slate-800/50" : ""
+                      }`}
+                      style={{ color: config.color }}
+                    >
+                      {config.label}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
 
         {/* Time Grid */}
-        <div className="flex-1 overflow-y-auto">
+        <div ref={gridRef} className="flex-1 overflow-y-auto">
           <div className={`grid ${viewMode === "day" ? "grid-cols-[60px_1fr]" : "grid-cols-[60px_repeat(7,1fr)]"} relative`}>
             {/* Hours Column */}
             <div>
@@ -339,89 +480,97 @@ export default function CalendarPage() {
               ))}
             </div>
 
-            {/* Day Columns */}
-            {weekDays.map((day, dayIndex) => {
-              const isToday =
-                day.getDate() === today.getDate() &&
-                day.getMonth() === today.getMonth() &&
-                day.getFullYear() === today.getFullYear();
+            {/* Day Columns with Person Sub-columns */}
+            {weekDays.map((day, dayIndex) => (
+              <div key={dayIndex} className="relative border-l border-slate-800 flex">
+                {/* Person sub-columns */}
+                {visiblePersons.map((person, personIndex) => {
+                  const config = PERSON_CONFIG[person];
+                  const personEvents = getDayEventsForPerson(day, person);
 
-              return (
-                <div key={dayIndex} className="relative border-l border-slate-800">
-                  {HOURS.map((hour) => (
-                    <div
-                      key={hour}
-                      onClick={() => handleTimeSlotClick(day, hour)}
-                      className="h-[60px] border-b border-slate-800 hover:bg-slate-800/30 cursor-pointer transition-colors"
-                    />
-                  ))}
-
-                  {/* Events */}
-                  {getDayEvents(day).map((event) => {
-                  const position = getEventPosition(event);
                   return (
-                    <motion.div
-                      key={event.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      style={{
-                        position: "absolute",
-                        top: position.top,
-                        height: position.height,
-                        left: "4px",
-                        right: "4px",
-                        minHeight: "40px",
-                        backgroundColor: event.color + "20",
-                        borderLeft: `3px solid ${event.color}`,
-                      }}
-                      className="rounded-lg p-2 text-xs cursor-pointer group"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEventModal({ isOpen: true, event });
-                      }}
+                    <div
+                      key={person}
+                      className={`flex-1 relative ${personIndex > 0 ? "border-l border-slate-800/30" : ""}`}
                     >
-                      <div className="flex items-start justify-between gap-1">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-white truncate">
-                            {event.title}
-                          </div>
-                          <div className="text-slate-400">
-                            {formatTime(event.start_time)}
-                          </div>
-                          {event.prospect && (
-                            <div className="text-slate-400 truncate">
-                              {event.prospect.name}
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteEvent(event.id);
+                      {/* Hour slots for this person column */}
+                      {HOURS.map((hour) => (
+                        <div
+                          key={hour}
+                          onClick={() => {
+                            setFormData((prev) => ({ ...prev, assignedTo: person }));
+                            handleTimeSlotClick(day, hour);
                           }}
-                          className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-400 transition-all"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                          className="h-[60px] border-b border-slate-800 hover:bg-slate-800/30 cursor-pointer transition-colors"
+                          style={{
+                            backgroundColor: `${config.color}05`,
+                          }}
+                        />
+                      ))}
+
+                      {/* Events for this person */}
+                      {personEvents.map((event) => {
+                        const position = getEventPosition(event);
+                        return (
+                          <motion.div
+                            key={event.id}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            style={{
+                              position: "absolute",
+                              top: position.top,
+                              height: position.height,
+                              left: "2px",
+                              right: "2px",
+                              minHeight: "40px",
+                              backgroundColor: event.color + "20",
+                              borderLeft: `3px solid ${event.color}`,
+                            }}
+                            className="rounded-lg p-1 text-xs cursor-pointer group overflow-hidden"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEventModal({ isOpen: true, event });
+                            }}
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </motion.div>
+                            <div className="flex items-start justify-between gap-1">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-white truncate text-[10px]">
+                                  {event.title}
+                                </div>
+                                <div className="text-slate-400 text-[10px]">
+                                  {formatTime(event.start_time)}
+                                </div>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteEvent(event.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-400 transition-all flex-shrink-0"
+                              >
+                                <svg
+                                  className="w-3 h-3"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M6 18L18 6M6 6l12 12"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
                   );
                 })}
-                </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -436,7 +585,11 @@ export default function CalendarPage() {
           <div className="relative bg-[#1A1F2E] rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-slate-800">
             <div className="p-6 border-b border-slate-800 flex items-center justify-between">
               <h3 className="text-xl font-bold text-white">
-                {eventModal.event ? "Event Details" : "New Event"}
+                {eventModal.event && !eventModal.isEditing
+                  ? "Event Details"
+                  : eventModal.isEditing
+                    ? "Edit Event"
+                    : "New Event"}
               </h3>
               <button
                 onClick={() => setEventModal({ isOpen: false })}
@@ -459,7 +612,7 @@ export default function CalendarPage() {
             </div>
 
             <div className="p-6 space-y-4">
-              {eventModal.event ? (
+              {eventModal.event && !eventModal.isEditing ? (
                 <>
                   <div>
                     <h4 className="text-lg font-semibold text-white mb-2">
@@ -531,16 +684,35 @@ export default function CalendarPage() {
                         {eventModal.event.prospect.name}
                       </div>
                     )}
+                    {eventModal.event.assigned_to && (
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: PERSON_CONFIG[eventModal.event.assigned_to]?.color }}
+                        />
+                        <span style={{ color: PERSON_CONFIG[eventModal.event.assigned_to]?.color }}>
+                          {PERSON_CONFIG[eventModal.event.assigned_to]?.label}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <button
-                    onClick={() => {
-                      handleDeleteEvent(eventModal.event!.id);
-                      setEventModal({ isOpen: false });
-                    }}
-                    className="w-full px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 rounded-xl font-medium transition-all"
-                  >
-                    Delete Event
-                  </button>
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={() => handleEditEvent(eventModal.event!)}
+                      className="flex-1 px-4 py-2.5 bg-teal-500/10 border border-teal-500/20 text-teal-400 hover:bg-teal-500/20 rounded-xl font-medium transition-all"
+                    >
+                      Edit Event
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleDeleteEvent(eventModal.event!.id);
+                        setEventModal({ isOpen: false });
+                      }}
+                      className="flex-1 px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 rounded-xl font-medium transition-all"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </>
               ) : (
                 <>
@@ -612,16 +784,21 @@ export default function CalendarPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">
-                        Color
+                        Who is going? *
                       </label>
-                      <input
-                        type="color"
-                        value={formData.color}
+                      <select
+                        value={formData.assignedTo}
                         onChange={(e) =>
-                          setFormData({ ...formData, color: e.target.value })
+                          setFormData({ ...formData, assignedTo: e.target.value as AssignedPerson })
                         }
-                        className="w-full h-[42px] px-2 py-1 border border-slate-700 rounded-xl bg-[#0F1419] focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                      />
+                        className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                      >
+                        {PERSON_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
@@ -677,10 +854,10 @@ export default function CalendarPage() {
                       Cancel
                     </button>
                     <button
-                      onClick={handleCreateEvent}
+                      onClick={eventModal.isEditing ? handleUpdateEvent : handleCreateEvent}
                       className="flex-1 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20"
                     >
-                      Create Event
+                      {eventModal.isEditing ? "Save Changes" : "Create Event"}
                     </button>
                   </div>
                 </>

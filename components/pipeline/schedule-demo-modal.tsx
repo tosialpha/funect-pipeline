@@ -9,6 +9,7 @@ interface ScheduleDemoModalProps {
   prospectId: string;
   prospectName: string;
   demoType: "first_demo" | "second_demo";
+  responsiblePerson?: string;
   onSuccess: () => void;
 }
 
@@ -18,6 +19,7 @@ export function ScheduleDemoModal({
   prospectId,
   prospectName,
   demoType,
+  responsiblePerson,
   onSuccess,
 }: ScheduleDemoModalProps) {
   const [formData, setFormData] = useState({
@@ -45,7 +47,8 @@ export function ScheduleDemoModal({
         demoType,
         startDateTime,
         endDateTime,
-        prospectName
+        prospectName,
+        responsiblePerson
       );
 
       onSuccess();

@@ -320,13 +320,16 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
               <label className="block text-sm font-medium text-slate-400 mb-2">
                 Responsible Person
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.responsible_person}
                 onChange={(e) => setFormData({ ...formData, responsible_person: e.target.value })}
-                placeholder="e.g., John Doe"
-                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-              />
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+              >
+                <option value="">Not assigned</option>
+                <option value="team">Team</option>
+                <option value="veeti">Veeti</option>
+                <option value="alppa">Alppa</option>
+              </select>
             </div>
 
             <div>
