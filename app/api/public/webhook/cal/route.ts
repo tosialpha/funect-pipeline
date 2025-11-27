@@ -55,16 +55,16 @@ export async function POST(request: NextRequest) {
     // 1. Find or create prospect
     const prospect = await findOrCreateProspect(attendee.email, attendee.name);
 
-    // 2. Get a user ID for the event (first user in system)
-    const { data: users } = await supabaseAdmin
-      .from("users")
-      .select("id")
-      .limit(1)
-      .single();
+    // 2. Get a user ID for the event (from auth.users - required by calendar_events FK)
+    const { data: authUsers, error: authError } = await supabaseAdmin
+      .auth.admin.listUsers({ perPage: 1 });
 
-    if (!users) {
-      throw new Error("No user found to assign the event");
+    if (authError || !authUsers?.users?.[0]) {
+      console.error("Error fetching auth users:", authError);
+      throw new Error("No auth user found to assign the event");
     }
+
+    const authUserId = authUsers.users[0].id;
 
     // 3. Create calendar event
     const startTime = new Date(payload.startTime);
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         end_time: endTime.toISOString(),
         all_day: false,
         prospect_id: prospect.id,
-        user_id: users.id,
+        user_id: authUserId,
         assigned_to: "veeti",
         color: getColorForPerson("veeti"),
         location: payload.meetingUrl || payload.location || "Google Meet",
