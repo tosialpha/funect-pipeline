@@ -41,32 +41,39 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
   const loadProspect = async () => {
     if (!prospectId) return;
 
-    const { data, error } = await supabase
-      .from("prospects")
-      .select("*")
-      .eq("id", prospectId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("prospects")
+        .select("*")
+        .eq("id", prospectId)
+        .single();
 
-    if (error) {
-      console.error("Error loading prospect:", error);
-      return;
-    }
+      if (error) {
+        console.error("Error loading prospect:", error.message || error);
+        setError("Failed to load prospect details");
+        return;
+      }
 
-    if (data) {
-      setFormData({
-        name: data.name || "",
-        type: data.type || "",
-        country: data.country || "",
-        city: data.city || "",
-        website: data.website || "",
-        phone: data.phone || "",
-        email: data.email || "",
-        pipeline_stage: data.pipeline_stage || "not_contacted",
-        priority: data.priority || "medium",
-        lead_source: data.lead_source || "cold_outreach",
-        responsible_person: data.responsible_person || "",
-        notes: data.notes || "",
-      });
+      if (data) {
+        setFormData({
+          name: data.name || "",
+          type: data.type || "",
+          country: data.country || "",
+          city: data.city || "",
+          website: data.website || "",
+          phone: data.phone || "",
+          email: data.email || "",
+          pipeline_stage: data.pipeline_stage || "not_contacted",
+          priority: data.priority || "medium",
+          lead_source: data.lead_source || "cold_outreach",
+          responsible_person: data.responsible_person || "",
+          notes: data.notes || "",
+        });
+        setError("");
+      }
+    } catch (err) {
+      console.error("Error loading prospect:", err);
+      setError("Failed to load prospect details");
     }
   };
 
@@ -102,9 +109,10 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
 
   const handleDelete = async () => {
     if (!prospectId) return;
-    if (!confirm("Are you sure you want to delete this prospect?")) return;
+    if (!confirm("Are you sure you want to delete this prospect? This action cannot be undone.")) return;
 
     setIsLoading(true);
+    setError("");
 
     try {
       const { error: dbError } = await supabase
@@ -124,6 +132,7 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
     } catch (err) {
       console.error("Error deleting prospect:", err);
       setError("An unexpected error occurred");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -428,9 +437,9 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
               type="button"
               onClick={handleDelete}
               disabled={isLoading}
-              className="px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-xl font-medium transition-all border border-red-500/20 disabled:opacity-50"
+              className="px-4 py-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-xl font-medium transition-all border border-red-500/30 disabled:opacity-50"
             >
-              Delete Prospect
+              {isLoading ? "Deleting..." : "Delete Prospect"}
             </button>
             <div className="flex items-center gap-3">
               {isEditing ? (

@@ -64,10 +64,16 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
     try {
       const dataToSubmit = {
         ...formData,
-        type: formData.type === "Other" ? customType : formData.type,
-        current_system: formData.current_system === "Other" ? customSystem : formData.current_system,
-        country: formData.country === "Other" ? customCountry : formData.country,
-        city: formData.city === "Other" ? customCity : formData.city,
+        type: formData.type === "Other" ? customType : (formData.type || null),
+        current_system: formData.current_system === "Other" ? customSystem : (formData.current_system || null),
+        country: formData.country === "Other" ? customCountry : (formData.country || null),
+        city: formData.city === "Other" ? customCity : (formData.city || null),
+        responsible_person: formData.responsible_person || null,
+        name: formData.name || null,
+        website: formData.website || null,
+        phone: formData.phone || null,
+        email: formData.email || null,
+        notes: formData.notes || null,
       };
       const { error: dbError } = await supabase.from("prospects").insert([dataToSubmit]);
 
@@ -142,13 +148,12 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-2">
-                Company Name *
+                Company Name
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
                 placeholder="e.g., Acme Corp"
                 className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               />
@@ -156,7 +161,7 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
 
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-2">
-                Business Type *
+                Business Type
               </label>
               <select
                 value={formData.type}
@@ -166,7 +171,6 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
                     setCustomType("");
                   }
                 }}
-                required
                 className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               >
                 <option value="">Select business type...</option>
@@ -181,7 +185,6 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
                   type="text"
                   value={customType}
                   onChange={(e) => setCustomType(e.target.value)}
-                  required
                   placeholder="Enter custom business type"
                   className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all mt-2"
                 />
@@ -190,7 +193,7 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
 
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-2">
-                Country *
+                Country
               </label>
               <select
                 value={formData.country}
@@ -201,7 +204,6 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
                     setCustomCountry("");
                   }
                 }}
-                required
                 className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               >
                 <option value="">Select country...</option>
@@ -215,7 +217,6 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
                   type="text"
                   value={customCountry}
                   onChange={(e) => setCustomCountry(e.target.value)}
-                  required
                   placeholder="Enter country name"
                   className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all mt-2"
                 />
@@ -224,7 +225,7 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
 
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-2">
-                City *
+                City
               </label>
               <select
                 value={formData.city}
@@ -234,7 +235,6 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
                     setCustomCity("");
                   }
                 }}
-                required
                 disabled={!formData.country || formData.country === "Other"}
                 className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -257,7 +257,6 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
                   type="text"
                   value={customCity}
                   onChange={(e) => setCustomCity(e.target.value)}
-                  required
                   placeholder="Enter city name"
                   className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all mt-2"
                 />
@@ -270,7 +269,6 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
                     setCustomCity(e.target.value);
                     setFormData({ ...formData, city: e.target.value });
                   }}
-                  required
                   placeholder="Enter city name"
                   className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
                 />
@@ -407,7 +405,6 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
                   type="text"
                   value={customSystem}
                   onChange={(e) => setCustomSystem(e.target.value)}
-                  required
                   placeholder="Enter custom system name"
                   className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all mt-2"
                 />
