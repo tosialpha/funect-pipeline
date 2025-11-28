@@ -1,7 +1,7 @@
 "use client";
 
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AddProspectModal } from "./add-prospect-modal";
 import { ProspectDetailModal } from "./prospect-detail-modal";
@@ -24,6 +24,7 @@ interface Prospect {
   lastActivity?: string;
   status: string;
   responsible_person?: string;
+  type?: string;
 }
 
 interface Column {
@@ -99,7 +100,26 @@ export function KanbanBoard() {
     targetStage?: PipelineStage;
     responsiblePerson?: string;
   }>({ isOpen: false });
+  const [sportTypes, setSportTypes] = useState<string[]>([]);
+  const [selectedSports, setSelectedSports] = useState<string[]>([]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
+
+  const loadSportTypes = async () => {
+    const { data, error } = await supabase
+      .from("prospects")
+      .select("type")
+      .not("type", "is", null);
+
+    if (error) {
+      console.error("Error loading sport types:", error);
+      return;
+    }
+
+    const uniqueTypes = [...new Set((data || []).map((p) => p.type).filter(Boolean))] as string[];
+    setSportTypes(uniqueTypes.sort());
+  };
 
   const loadProspects = async () => {
     const { data, error } = await supabase
@@ -115,10 +135,12 @@ export function KanbanBoard() {
     const newColumns = INITIAL_COLUMNS.map((col) => {
       const prospects = (data || [])
         .filter((p) => p.pipeline_stage === col.id)
+        .filter((p) => selectedSports.length === 0 || selectedSports.includes(p.type))
         .map((p) => ({
           id: p.id,
           name: p.name,
           company: p.type,
+          type: p.type,
           lastActivity: p.last_activity_date
             ? new Date(p.last_activity_date).toLocaleDateString()
             : undefined,
@@ -137,8 +159,37 @@ export function KanbanBoard() {
   };
 
   useEffect(() => {
+    loadSportTypes();
     loadProspects();
   }, []);
+
+  useEffect(() => {
+    loadProspects();
+  }, [selectedSports]);
+
+  // Close filter dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleSportFilter = (sport: string) => {
+    setSelectedSports((prev) =>
+      prev.includes(sport)
+        ? prev.filter((s) => s !== sport)
+        : [...prev, sport]
+    );
+  };
+
+  const clearFilters = () => {
+    setSelectedSports([]);
+  };
 
   const onDragEnd = async (result: any) => {
     const { source, destination } = result;
@@ -240,16 +291,108 @@ export function KanbanBoard() {
             Drag and drop prospects between stages
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20 flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Prospect
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Sports Filter Dropdown */}
+          <div className="relative" ref={filterRef}>
+            <button
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className={`px-4 py-2.5 border rounded-xl font-medium transition-all flex items-center gap-2 ${
+                selectedSports.length > 0
+                  ? "border-teal-500 bg-teal-500/10 text-teal-400"
+                  : "border-slate-700 bg-[#1A1F2E] text-slate-300 hover:border-slate-600"
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              Sports
+              {selectedSports.length > 0 && (
+                <span className="px-1.5 py-0.5 text-xs bg-teal-500 text-white rounded-full">
+                  {selectedSports.length}
+                </span>
+              )}
+              <svg className={`w-4 h-4 transition-transform ${isFilterOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isFilterOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-[#1A1F2E] border border-slate-800 rounded-xl shadow-xl z-50 overflow-hidden">
+                <div className="p-3 border-b border-slate-800 flex items-center justify-between">
+                  <span className="text-sm font-medium text-white">Filter by Sport</span>
+                  {selectedSports.length > 0 && (
+                    <button
+                      onClick={clearFilters}
+                      className="text-xs text-teal-400 hover:text-teal-300 transition-colors"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-64 overflow-y-auto p-2">
+                  {sportTypes.length === 0 ? (
+                    <p className="text-sm text-slate-500 p-2">No sports found</p>
+                  ) : (
+                    sportTypes.map((sport) => (
+                      <label
+                        key={sport}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800/50 cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedSports.includes(sport)}
+                          onChange={() => toggleSportFilter(sport)}
+                          className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-teal-500 focus:ring-teal-500 focus:ring-offset-0"
+                        />
+                        <span className="text-sm text-slate-300">{sport}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20 flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Prospect
+          </button>
+        </div>
       </div>
+
+      {/* Active Filter Chips */}
+      {selectedSports.length > 0 && (
+        <div className="mb-4 flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-slate-400">Filtering by:</span>
+          {selectedSports.map((sport) => (
+            <span
+              key={sport}
+              className="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-500/10 border border-teal-500/30 text-teal-400 rounded-full text-sm"
+            >
+              {sport}
+              <button
+                onClick={() => toggleSportFilter(sport)}
+                className="hover:text-white transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </span>
+          ))}
+          <button
+            onClick={clearFilters}
+            className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
 
       <AddProspectModal
         isOpen={isModalOpen}
