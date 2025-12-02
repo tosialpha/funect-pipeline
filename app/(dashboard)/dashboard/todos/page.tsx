@@ -79,6 +79,7 @@ export default function TodosPage() {
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const currentFieldRef = useRef<'title' | 'description' | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -168,24 +169,53 @@ export default function TodosPage() {
     }
   };
 
+  // Validate and set screenshot file
+  const processScreenshotFile = (file: File) => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be less than 5MB');
+      return;
+    }
+    setScreenshotFile(file);
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setScreenshotPreview(previewUrl);
+  };
+
   // Handle screenshot file selection
   const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
-        return;
-      }
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Image must be less than 5MB');
-        return;
-      }
-      setScreenshotFile(file);
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file);
-      setScreenshotPreview(previewUrl);
+      processScreenshotFile(file);
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processScreenshotFile(file);
     }
   };
 
@@ -696,12 +726,21 @@ export default function TodosPage() {
                 ) : (
                   <label
                     htmlFor="screenshot-upload"
-                    className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-xl bg-[#0F1419] hover:border-teal-500/50 hover:bg-[#0F1419]/80 cursor-pointer transition-all"
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                      isDragging
+                        ? 'border-teal-500 bg-teal-500/10'
+                        : 'border-slate-700 bg-[#0F1419] hover:border-teal-500/50 hover:bg-[#0F1419]/80'
+                    }`}
                   >
-                    <svg className="w-8 h-8 text-slate-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-8 h-8 mb-2 ${isDragging ? 'text-teal-500' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className="text-sm text-slate-500">Click to upload screenshot</span>
+                    <span className={`text-sm ${isDragging ? 'text-teal-400' : 'text-slate-500'}`}>
+                      {isDragging ? 'Drop image here' : 'Drag & drop or click to upload'}
+                    </span>
                     <span className="text-xs text-slate-600 mt-1">PNG, JPG up to 5MB</span>
                   </label>
                 )}
