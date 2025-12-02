@@ -1,10 +1,52 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { createClient } from "@/lib/supabase/client";
 import { calendarService } from "@/lib/services/calendar.service";
 import { TaskDetailModal } from "@/components/todos/task-detail-modal";
+
+// TypeScript declarations for Web Speech API
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onend: () => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  start: () => void;
+  stop: () => void;
+}
+
+interface SpeechRecognitionEvent {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  [index: number]: SpeechRecognitionResult;
+  length: number;
+}
+
+interface SpeechRecognitionResult {
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+}
 
 interface Todo {
   id: string;
@@ -31,13 +73,111 @@ export default function TodosPage() {
     startTime: "09:00",
     endTime: "10:00",
   });
+  const [isRecordingTitle, setIsRecordingTitle] = useState(false);
+  const [isRecordingDescription, setIsRecordingDescription] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const currentFieldRef = useRef<'title' | 'description' | null>(null);
 
   const supabase = createClient();
+
+  // Voice dictation function
+  const toggleVoiceInput = (field: 'title' | 'description') => {
+    if (typeof window === 'undefined') return;
+
+    // If already recording this field, stop it
+    if (recognitionRef.current && currentFieldRef.current === field) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      currentFieldRef.current = null;
+      return;
+    }
+
+    // If recording another field, stop it first
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.');
+      return;
+    }
+
+    const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionConstructor();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognitionRef.current = recognition;
+    currentFieldRef.current = field;
+
+    if (field === 'title') {
+      setIsRecordingTitle(true);
+      setIsRecordingDescription(false);
+    } else {
+      setIsRecordingDescription(true);
+      setIsRecordingTitle(false);
+    }
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          transcript += event.results[i][0].transcript;
+        }
+      }
+      if (transcript) {
+        setFormData(prev => ({
+          ...prev,
+          [field]: prev[field] + (prev[field] ? ' ' : '') + transcript
+        }));
+      }
+    };
+
+    recognition.onend = () => {
+      setIsRecordingTitle(false);
+      setIsRecordingDescription(false);
+      recognitionRef.current = null;
+      currentFieldRef.current = null;
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.error('Speech recognition error:', event.error);
+      setIsRecordingTitle(false);
+      setIsRecordingDescription(false);
+      recognitionRef.current = null;
+      currentFieldRef.current = null;
+
+      if (event.error === 'not-allowed') {
+        alert('Microphone access denied. Please allow microphone permissions in your browser settings.');
+      }
+    };
+
+    try {
+      recognition.start();
+    } catch (err) {
+      console.error('Failed to start recognition:', err);
+      setIsRecordingTitle(false);
+      setIsRecordingDescription(false);
+    }
+  };
 
   // Load todos on mount
   useEffect(() => {
     loadTodos();
   }, []);
+
+  // Stop recording when modal closes
+  useEffect(() => {
+    if (!isModalOpen && recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      currentFieldRef.current = null;
+      setIsRecordingTitle(false);
+      setIsRecordingDescription(false);
+    }
+  }, [isModalOpen]);
 
   const loadTodos = async () => {
     setIsLoading(true);
@@ -390,53 +530,124 @@ export default function TodosPage() {
                 <label className="block text-sm font-medium text-slate-400 mb-2">
                   Task Title *
                 </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Enter task title..."
-                  className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Enter task title..."
+                    className="w-full px-4 py-2.5 pr-12 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleVoiceInput('title')}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${
+                      isRecordingTitle
+                        ? 'text-red-500 animate-pulse bg-red-500/10'
+                        : 'text-slate-400 hover:text-teal-500 hover:bg-slate-800'
+                    }`}
+                    title="Voice input"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2">
                   Description
                 </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  placeholder="Add details..."
-                  className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                />
+                <div className="relative">
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={3}
+                    placeholder="Add details..."
+                    className="w-full px-4 py-2.5 pr-12 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all resize-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleVoiceInput('description')}
+                    className={`absolute right-3 top-3 p-1.5 rounded-lg transition-all ${
+                      isRecordingDescription
+                        ? 'text-red-500 animate-pulse bg-red-500/10'
+                        : 'text-slate-400 hover:text-teal-500 hover:bg-slate-800'
+                    }`}
+                    title="Voice input"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2">
                   Assigned To *
                 </label>
-                <select
-                  value={formData.assignedTo}
-                  onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value as "team" | "veeti" | "alppa" })}
-                  className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                >
-                  <option value="team">Team Task</option>
-                  <option value="veeti">Veeti</option>
-                  <option value="alppa">Alppa</option>
-                </select>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, assignedTo: "team" })}
+                    className={`flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                      formData.assignedTo === "team"
+                        ? "bg-purple-500/20 border-purple-500 text-purple-400"
+                        : "border-slate-700 text-slate-400 hover:border-slate-600"
+                    }`}
+                  >
+                    Team
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, assignedTo: "veeti" })}
+                    className={`flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                      formData.assignedTo === "veeti"
+                        ? "bg-blue-500/20 border-blue-500 text-blue-400"
+                        : "border-slate-700 text-slate-400 hover:border-slate-600"
+                    }`}
+                  >
+                    Veeti
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, assignedTo: "alppa" })}
+                    className={`flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                      formData.assignedTo === "alppa"
+                        ? "bg-orange-500/20 border-orange-500 text-orange-400"
+                        : "border-slate-700 text-slate-400 hover:border-slate-600"
+                    }`}
+                  >
+                    Alppa
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2">
                   Due Date *
                 </label>
-                <input
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                    className="flex-1 px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      setFormData({ ...formData, dueDate: tomorrow.toISOString().split('T')[0] });
+                    }}
+                    className="px-4 py-2.5 border border-slate-700 rounded-xl text-slate-300 hover:bg-slate-800/50 hover:border-slate-600 transition-all whitespace-nowrap text-sm font-medium"
+                  >
+                    Tomorrow
+                  </button>
+                </div>
               </div>
 
               {/* Add to Calendar Option */}
