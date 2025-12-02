@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 interface Todo {
@@ -11,6 +11,7 @@ interface Todo {
   assigned_to: "team" | "veeti" | "alppa";
   due_date: string;
   display_order: number;
+  screenshot_url?: string;
 }
 
 interface TaskDetailModalProps {
@@ -31,9 +32,67 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
     assigned_to: "team" as "team" | "veeti" | "alppa",
     due_date: "",
     completed: false,
+    screenshot_url: "" as string | undefined,
   });
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const supabase = createClient();
+
+  // Handle screenshot file selection
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image must be less than 5MB');
+        return;
+      }
+      setScreenshotFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setScreenshotPreview(previewUrl);
+    }
+  };
+
+  // Remove screenshot
+  const removeScreenshot = () => {
+    setScreenshotFile(null);
+    if (screenshotPreview) {
+      URL.revokeObjectURL(screenshotPreview);
+      setScreenshotPreview(null);
+    }
+    setFormData({ ...formData, screenshot_url: undefined });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Upload screenshot to Supabase storage
+  const uploadScreenshot = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `screenshots/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('task-screenshots')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error('Error uploading screenshot:', uploadError);
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('task-screenshots')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
 
   useEffect(() => {
     if (todo && isOpen) {
@@ -43,9 +102,12 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
         assigned_to: todo.assigned_to || "team",
         due_date: todo.due_date || "",
         completed: todo.completed || false,
+        screenshot_url: todo.screenshot_url || undefined,
       });
       setIsEditing(false);
       setError("");
+      setScreenshotFile(null);
+      setScreenshotPreview(null);
     }
   }, [todo, isOpen]);
 
@@ -57,6 +119,18 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
     setError("");
 
     try {
+      // Upload new screenshot if one was selected
+      let finalScreenshotUrl = formData.screenshot_url;
+      if (screenshotFile) {
+        const uploadedUrl = await uploadScreenshot(screenshotFile);
+        if (!uploadedUrl) {
+          setError('Failed to upload screenshot. Please try again.');
+          setIsLoading(false);
+          return;
+        }
+        finalScreenshotUrl = uploadedUrl;
+      }
+
       const { error: dbError } = await supabase
         .from("todos")
         .update({
@@ -65,6 +139,7 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
           assigned_to: formData.assigned_to,
           due_date: formData.due_date,
           completed: formData.completed,
+          screenshot_url: finalScreenshotUrl || null,
         })
         .eq("id", todo.id);
 
@@ -82,8 +157,11 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
         assigned_to: formData.assigned_to,
         due_date: formData.due_date,
         completed: formData.completed,
+        screenshot_url: finalScreenshotUrl,
       });
       setIsEditing(false);
+      setScreenshotFile(null);
+      setScreenshotPreview(null);
     } catch (err) {
       console.error("Error updating task:", err);
       setError("An unexpected error occurred");
@@ -220,6 +298,79 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
             )}
           </div>
 
+          {/* Screenshot */}
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">
+              Screenshot
+            </label>
+            {isEditing ? (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleScreenshotChange}
+                  className="hidden"
+                  id="screenshot-edit-upload"
+                />
+                {screenshotPreview || formData.screenshot_url ? (
+                  <div className="relative">
+                    <img
+                      src={screenshotPreview || formData.screenshot_url}
+                      alt="Screenshot"
+                      className="w-full h-48 object-cover rounded-xl border border-slate-700 cursor-pointer"
+                      onClick={() => setIsImageModalOpen(true)}
+                    />
+                    <button
+                      type="button"
+                      onClick={removeScreenshot}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500/90 hover:bg-red-500 text-white rounded-lg transition-all"
+                      title="Remove screenshot"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    <label
+                      htmlFor="screenshot-edit-upload"
+                      className="absolute bottom-2 right-2 p-1.5 bg-slate-800/90 hover:bg-slate-700 text-white rounded-lg transition-all cursor-pointer"
+                      title="Change screenshot"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </label>
+                  </div>
+                ) : (
+                  <label
+                    htmlFor="screenshot-edit-upload"
+                    className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-xl bg-[#0F1419] hover:border-teal-500/50 hover:bg-[#0F1419]/80 cursor-pointer transition-all"
+                  >
+                    <svg className="w-8 h-8 text-slate-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-sm text-slate-500">Click to upload screenshot</span>
+                    <span className="text-xs text-slate-600 mt-1">PNG, JPG up to 5MB</span>
+                  </label>
+                )}
+              </>
+            ) : formData.screenshot_url ? (
+              <div className="relative">
+                <img
+                  src={formData.screenshot_url}
+                  alt="Screenshot"
+                  className="w-full h-48 object-cover rounded-xl border border-slate-700 cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => setIsImageModalOpen(true)}
+                />
+                <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/70 rounded-lg text-xs text-slate-300">
+                  Click to view full size
+                </div>
+              </div>
+            ) : (
+              <p className="text-slate-500">No screenshot attached</p>
+            )}
+          </div>
+
           {/* Assigned To */}
           <div>
             <label className="block text-sm font-medium text-slate-400 mb-2">
@@ -303,6 +454,8 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
                     type="button"
                     onClick={() => {
                       setIsEditing(false);
+                      setScreenshotFile(null);
+                      setScreenshotPreview(null);
                       if (todo) {
                         setFormData({
                           title: todo.title || "",
@@ -310,6 +463,7 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
                           assigned_to: todo.assigned_to || "team",
                           due_date: todo.due_date || "",
                           completed: todo.completed || false,
+                          screenshot_url: todo.screenshot_url || undefined,
                         });
                       }
                     }}
@@ -339,6 +493,29 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
           </div>
         </form>
       </div>
+
+      {/* Fullscreen Image Modal */}
+      {isImageModalOpen && (screenshotPreview || formData.screenshot_url) && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={() => setIsImageModalOpen(false)}
+        >
+          <button
+            onClick={() => setIsImageModalOpen(false)}
+            className="absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-xl transition-all"
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <img
+            src={screenshotPreview || formData.screenshot_url}
+            alt="Screenshot full view"
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

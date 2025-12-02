@@ -56,6 +56,7 @@ interface Todo {
   due_date: string;
   description?: string;
   display_order: number;
+  screenshot_url?: string;
 }
 
 export default function TodosPage() {
@@ -75,8 +76,12 @@ export default function TodosPage() {
   });
   const [isRecordingTitle, setIsRecordingTitle] = useState(false);
   const [isRecordingDescription, setIsRecordingDescription] = useState(false);
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const currentFieldRef = useRef<'title' | 'description' | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const supabase = createClient();
 
@@ -163,6 +168,61 @@ export default function TodosPage() {
     }
   };
 
+  // Handle screenshot file selection
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image must be less than 5MB');
+        return;
+      }
+      setScreenshotFile(file);
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setScreenshotPreview(previewUrl);
+    }
+  };
+
+  // Remove screenshot
+  const removeScreenshot = () => {
+    setScreenshotFile(null);
+    if (screenshotPreview) {
+      URL.revokeObjectURL(screenshotPreview);
+      setScreenshotPreview(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Upload screenshot to Supabase storage
+  const uploadScreenshot = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `screenshots/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('task-screenshots')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error('Error uploading screenshot:', uploadError);
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('task-screenshots')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   // Load todos on mount
   useEffect(() => {
     loadTodos();
@@ -218,6 +278,19 @@ export default function TodosPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    setIsUploading(true);
+
+    // Upload screenshot if one was selected
+    let screenshotUrl: string | null = null;
+    if (screenshotFile) {
+      screenshotUrl = await uploadScreenshot(screenshotFile);
+      if (!screenshotUrl) {
+        alert('Failed to upload screenshot. Please try again.');
+        setIsUploading(false);
+        return;
+      }
+    }
+
     // Get the max display_order for the target date to add at the end
     const todosForDate = todos.filter(t => t.due_date === formData.dueDate);
     const maxOrder = todosForDate.length > 0
@@ -234,12 +307,14 @@ export default function TodosPage() {
         due_date: formData.dueDate,
         user_id: user.id,
         display_order: maxOrder + 1,
+        screenshot_url: screenshotUrl,
       })
       .select()
       .single();
 
     if (error) {
       console.error("Error creating todo:", error);
+      setIsUploading(false);
       return;
     }
 
@@ -271,6 +346,7 @@ export default function TodosPage() {
       }
     }
 
+    // Clear form and screenshot state
     setFormData({
       title: "",
       description: "",
@@ -280,6 +356,8 @@ export default function TodosPage() {
       startTime: "09:00",
       endTime: "10:00",
     });
+    removeScreenshot();
+    setIsUploading(false);
     setIsModalOpen(false);
   };
 
@@ -512,8 +590,8 @@ export default function TodosPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-          <div className="relative bg-[#1A1F2E] rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-slate-800">
-            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+          <div className="relative bg-[#1A1F2E] rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-slate-800 max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
               <h3 className="text-xl font-bold text-white">Add New Task</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -525,7 +603,7 @@ export default function TodosPage() {
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2">
                   Task Title *
@@ -582,6 +660,51 @@ export default function TodosPage() {
                     </svg>
                   </button>
                 </div>
+              </div>
+
+              {/* Screenshot Upload */}
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-2">
+                  Screenshot (optional)
+                </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleScreenshotChange}
+                  className="hidden"
+                  id="screenshot-upload"
+                />
+                {screenshotPreview ? (
+                  <div className="relative">
+                    <img
+                      src={screenshotPreview}
+                      alt="Screenshot preview"
+                      className="w-full h-40 object-cover rounded-xl border border-slate-700"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeScreenshot}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500/90 hover:bg-red-500 text-white rounded-lg transition-all"
+                      title="Remove screenshot"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
+                  <label
+                    htmlFor="screenshot-upload"
+                    className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-xl bg-[#0F1419] hover:border-teal-500/50 hover:bg-[#0F1419]/80 cursor-pointer transition-all"
+                  >
+                    <svg className="w-8 h-8 text-slate-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-sm text-slate-500">Click to upload screenshot</span>
+                    <span className="text-xs text-slate-600 mt-1">PNG, JPG up to 5MB</span>
+                  </label>
+                )}
               </div>
 
               <div>
@@ -699,15 +822,25 @@ export default function TodosPage() {
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-4 py-2.5 border border-slate-700 text-slate-300 hover:bg-slate-800/50 rounded-xl font-medium transition-all"
+                  disabled={isUploading}
+                  className="flex-1 px-4 py-2.5 border border-slate-700 text-slate-300 hover:bg-slate-800/50 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={addTodo}
-                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20"
+                  disabled={isUploading}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Add Task
+                  {isUploading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Uploading...
+                    </span>
+                  ) : 'Add Task'}
                 </button>
               </div>
             </div>
