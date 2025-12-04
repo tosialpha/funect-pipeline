@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { AddProspectModal } from "./add-prospect-modal";
 import { ProspectDetailModal } from "./prospect-detail-modal";
 import { ScheduleDemoModal } from "./schedule-demo-modal";
+import { useDragToScroll } from "@/hooks/useDragToScroll";
 
 type PipelineStage =
   | "not_contacted"
@@ -103,7 +104,10 @@ export function KanbanBoard() {
   const [sportTypes, setSportTypes] = useState<string[]>([]);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const filterRef = useRef<HTMLDivElement>(null);
+  const [isDndDragging, setIsDndDragging] = useState(false);
+  const { ref: scrollContainerRef } = useDragToScroll({ disabled: isDndDragging });
   const supabase = createClient();
 
   const loadSportTypes = async () => {
@@ -133,9 +137,18 @@ export function KanbanBoard() {
     }
 
     const newColumns = INITIAL_COLUMNS.map((col) => {
+      const searchLower = searchQuery.toLowerCase().trim();
       const prospects = (data || [])
         .filter((p) => p.pipeline_stage === col.id)
         .filter((p) => selectedSports.length === 0 || selectedSports.includes(p.type))
+        .filter((p) => {
+          if (!searchLower) return true;
+          return (
+            p.name?.toLowerCase().includes(searchLower) ||
+            p.type?.toLowerCase().includes(searchLower) ||
+            p.responsible_person?.toLowerCase().includes(searchLower)
+          );
+        })
         .map((p) => ({
           id: p.id,
           name: p.name,
@@ -165,7 +178,7 @@ export function KanbanBoard() {
 
   useEffect(() => {
     loadProspects();
-  }, [selectedSports]);
+  }, [selectedSports, searchQuery]);
 
   // Close filter dropdown when clicking outside
   useEffect(() => {
@@ -292,6 +305,35 @@ export function KanbanBoard() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Search Bar */}
+          <div className="relative">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search prospects..."
+              className="w-64 pl-10 pr-4 py-2.5 border border-slate-700 rounded-xl bg-[#1A1F2E] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
           {/* Sports Filter Dropdown */}
           <div className="relative" ref={filterRef}>
             <button
@@ -425,8 +467,8 @@ export function KanbanBoard() {
         />
       )}
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+      <DragDropContext onDragStart={() => setIsDndDragging(true)} onDragEnd={(result) => { setIsDndDragging(false); onDragEnd(result); }}>
+        <div ref={scrollContainerRef} className="flex gap-4 overflow-x-auto pb-4">
           {columns.map((column) => (
             <div
               key={column.id}
@@ -484,6 +526,7 @@ export function KanbanBoard() {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
+                                data-no-drag-scroll
                                 onClick={() => {
                                   setSelectedProspectId(prospect.id);
                                   setIsDetailModalOpen(true);

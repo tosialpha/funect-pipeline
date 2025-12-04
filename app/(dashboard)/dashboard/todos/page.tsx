@@ -5,6 +5,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { createClient } from "@/lib/supabase/client";
 import { calendarService } from "@/lib/services/calendar.service";
 import { TaskDetailModal } from "@/components/todos/task-detail-modal";
+import { useDragToScroll } from "@/hooks/useDragToScroll";
 
 // TypeScript declarations for Web Speech API
 declare global {
@@ -83,6 +84,8 @@ export default function TodosPage() {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const currentFieldRef = useRef<'title' | 'description' | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isDndDragging, setIsDndDragging] = useState(false);
+  const { ref: scrollContainerRef } = useDragToScroll({ disabled: isDndDragging });
 
   const supabase = createClient();
 
@@ -888,8 +891,8 @@ export default function TodosPage() {
       )}
 
       {/* Calendar View */}
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+      <DragDropContext onDragStart={() => setIsDndDragging(true)} onDragEnd={(result) => { setIsDndDragging(false); onDragEnd(result); }}>
+        <div ref={scrollContainerRef} className="flex gap-4 overflow-x-auto pb-4">
           {days.map((day) => {
             const dayTodos = getTodosForDate(day.date);
             return (
@@ -932,6 +935,7 @@ export default function TodosPage() {
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
+                                    data-no-drag-scroll
                                     style={{
                                       ...provided.draggableProps.style,
                                       transition: snapshot.isDropAnimating
