@@ -16,6 +16,7 @@ export interface CalendarEvent {
   location?: string;
   color: string;
   assigned_to: AssignedPerson;
+  organization_id: string;
   created_at: string;
   updated_at: string;
   // Relations
@@ -110,7 +111,7 @@ export class CalendarService {
   /**
    * Create a new calendar event
    */
-  async createEvent(input: CreateEventInput): Promise<CalendarEvent> {
+  async createEvent(input: CreateEventInput, organizationId: string): Promise<CalendarEvent> {
     const {
       data: { user },
     } = await this.supabase.auth.getUser();
@@ -137,6 +138,7 @@ export class CalendarService {
         assigned_to: assignedTo,
         color: color,
         user_id: user.id,
+        organization_id: organizationId,
       })
       .select()
       .single();
@@ -214,10 +216,15 @@ export class CalendarService {
     startTime: Date,
     endTime: Date,
     prospectName: string,
-    responsiblePerson?: string
+    responsiblePerson?: string,
+    organizationId?: string
   ): Promise<CalendarEvent> {
     // Determine assigned_to from responsible person or default to 'team'
     const assignedTo = (responsiblePerson?.toLowerCase() || "team") as AssignedPerson;
+
+    if (!organizationId) {
+      throw new Error("Organization ID is required");
+    }
 
     // Create the calendar event
     const event = await this.createEvent({
@@ -228,7 +235,7 @@ export class CalendarService {
       end_time: endTime,
       prospect_id: prospectId,
       assigned_to: assignedTo,
-    });
+    }, organizationId);
 
     // Update the prospect with the scheduled date
     const dateField =

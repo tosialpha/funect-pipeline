@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { calendarService } from "@/lib/services/calendar.service";
+import { useOrganization } from "@/lib/contexts/organization-context";
 
 interface ScheduleDemoModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export function ScheduleDemoModal({
   responsiblePerson,
   onSuccess,
 }: ScheduleDemoModalProps) {
+  const { organizationId } = useOrganization();
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     startTime: "10:00",
@@ -48,7 +50,8 @@ export function ScheduleDemoModal({
         startDateTime,
         endDateTime,
         prospectName,
-        responsiblePerson
+        responsiblePerson,
+        organizationId
       );
 
       onSuccess();

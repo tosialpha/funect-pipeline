@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useOrganization } from "@/lib/contexts/organization-context";
 
 interface AddProspectModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface AddProspectModalProps {
 }
 
 export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModalProps) {
+  const { organizationId } = useOrganization();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
@@ -74,6 +76,7 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
         phone: formData.phone || null,
         email: formData.email || null,
         notes: formData.notes || null,
+        organization_id: organizationId,
       };
       const { error: dbError } = await supabase.from("prospects").insert([dataToSubmit]);
 

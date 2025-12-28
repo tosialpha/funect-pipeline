@@ -37,14 +37,53 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const pathname = request.nextUrl.pathname;
+
+  // Allow public routes without authentication
   if (
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/api/public")
   ) {
-    // No user, potentially respond by redirecting the user to the login page
+    return supabaseResponse;
+  }
+
+  // Redirect unauthenticated users to login
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  // Check if this is an organization route
+  const orgMatch = pathname.match(/^\/org\/([^\/]+)/);
+
+  if (orgMatch) {
+    const orgSlug = orgMatch[1];
+
+    // Validate that user is a member of this organization
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select(`
+        organization_id,
+        organizations!inner(slug)
+      `)
+      .eq("user_id", user.id)
+      .eq("organizations.slug", orgSlug)
+      .single();
+
+    if (!membership) {
+      // User is not a member of this organization - redirect to org picker
+      const url = request.nextUrl.clone();
+      url.pathname = "/organizations";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Redirect old dashboard routes to organizations picker
+  if (pathname.startsWith("/dashboard")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/organizations";
     return NextResponse.redirect(url);
   }
 
