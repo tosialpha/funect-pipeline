@@ -45,7 +45,9 @@ export default async function OrgLayout({ children, params }: OrgLayoutProps) {
     notFound();
   }
 
-  const organization = membership.organizations as {
+  // Handle both array and object response from Supabase join
+  const orgs = membership.organizations;
+  const organization = (Array.isArray(orgs) ? orgs[0] : orgs) as {
     id: string;
     name: string;
     slug: string;
