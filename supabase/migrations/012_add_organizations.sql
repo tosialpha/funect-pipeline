@@ -210,19 +210,21 @@ DROP POLICY IF EXISTS "Users can delete all calendar events" ON calendar_events;
 -- STEP 8: Create New Organization-Scoped RLS Policies
 -- ============================================================================
 
--- Organizations table policies
+-- Organization members policies (users can see their own memberships)
+CREATE POLICY "Users can view their own memberships"
+  ON organization_members
+  FOR SELECT
+  TO authenticated
+  USING (user_id = auth.uid());
+
+-- Organizations table policies (users can see orgs they belong to)
 CREATE POLICY "Users can view their organizations"
   ON organizations
   FOR SELECT
   TO authenticated
-  USING (id IN (SELECT get_user_org_ids()));
-
--- Organization members policies
-CREATE POLICY "Users can view org members"
-  ON organization_members
-  FOR SELECT
-  TO authenticated
-  USING (organization_id IN (SELECT get_user_org_ids()));
+  USING (id IN (
+    SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
+  ));
 
 -- Prospects table policies
 CREATE POLICY "Org members can view prospects"
