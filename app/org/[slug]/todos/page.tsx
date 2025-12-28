@@ -7,6 +7,7 @@ import { calendarService } from "@/lib/services/calendar.service";
 import { TaskDetailModal } from "@/components/todos/task-detail-modal";
 import { useDragToScroll } from "@/hooks/useDragToScroll";
 import { useOrganization } from "@/lib/contexts/organization-context";
+import { getPersonOptionsForOrg, PERSON_CONFIG, AssignedPerson } from "@/lib/constants/person-colors";
 
 // TypeScript declarations for Web Speech API
 declare global {
@@ -54,7 +55,7 @@ interface Todo {
   id: string;
   title: string;
   completed: boolean;
-  assigned_to: "team" | "veeti" | "alppa";
+  assigned_to: AssignedPerson;
   due_date: string;
   description?: string;
   display_order: number;
@@ -68,11 +69,12 @@ export default function TodosPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const { organizationId } = useOrganization();
+  const { organizationId, slug } = useOrganization();
+  const personOptions = getPersonOptionsForOrg(slug);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    assignedTo: "team" as "team" | "veeti" | "alppa",
+    assignedTo: "team" as AssignedPerson,
     dueDate: new Date().toISOString().split('T')[0],
     addToCalendar: false,
     startTime: "09:00",
@@ -550,6 +552,8 @@ export default function TodosPage() {
         return "border-blue-500";
       case "alppa":
         return "border-orange-500";
+      case "ilari":
+        return "border-emerald-500";
       default:
         return "border-slate-500";
     }
@@ -563,6 +567,8 @@ export default function TodosPage() {
         return { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20", label: "Veeti" };
       case "alppa":
         return { bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/20", label: "Alppa" };
+      case "ilari":
+        return { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20", label: "Ilari" };
       default:
         return { bg: "bg-slate-500/10", text: "text-slate-400", border: "border-slate-500/20", label: "Unassigned" };
     }
@@ -725,39 +731,25 @@ export default function TodosPage() {
                   Assigned To *
                 </label>
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, assignedTo: "team" })}
-                    className={`flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                      formData.assignedTo === "team"
-                        ? "bg-purple-500/20 border-purple-500 text-purple-400"
-                        : "border-slate-700 text-slate-400 hover:border-slate-600"
-                    }`}
-                  >
-                    Team
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, assignedTo: "veeti" })}
-                    className={`flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                      formData.assignedTo === "veeti"
-                        ? "bg-blue-500/20 border-blue-500 text-blue-400"
-                        : "border-slate-700 text-slate-400 hover:border-slate-600"
-                    }`}
-                  >
-                    Veeti
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, assignedTo: "alppa" })}
-                    className={`flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                      formData.assignedTo === "alppa"
-                        ? "bg-orange-500/20 border-orange-500 text-orange-400"
-                        : "border-slate-700 text-slate-400 hover:border-slate-600"
-                    }`}
-                  >
-                    Alppa
-                  </button>
+                  {personOptions.map((person) => (
+                    <button
+                      key={person.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, assignedTo: person.value as AssignedPerson })}
+                      className={`flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                        formData.assignedTo === person.value
+                          ? `bg-${person.tailwind}-500/20 border-${person.tailwind}-500 text-${person.tailwind}-400`
+                          : "border-slate-700 text-slate-400 hover:border-slate-600"
+                      }`}
+                      style={formData.assignedTo === person.value ? {
+                        backgroundColor: `${person.color}20`,
+                        borderColor: person.color,
+                        color: person.color,
+                      } : {}}
+                    >
+                      {person.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 

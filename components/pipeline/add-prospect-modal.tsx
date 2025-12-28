@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useOrganization } from "@/lib/contexts/organization-context";
+import { getPersonOptionsForOrg } from "@/lib/constants/person-colors";
 
 interface AddProspectModalProps {
   isOpen: boolean;
@@ -11,7 +12,8 @@ interface AddProspectModalProps {
 }
 
 export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModalProps) {
-  const { organizationId } = useOrganization();
+  const { organizationId, slug } = useOrganization();
+  const personOptions = getPersonOptionsForOrg(slug);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
@@ -327,9 +329,9 @@ export function AddProspectModal({ isOpen, onClose, onSuccess }: AddProspectModa
                 className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               >
                 <option value="">Not assigned</option>
-                <option value="team">Team</option>
-                <option value="veeti">Veeti</option>
-                <option value="alppa">Alppa</option>
+                {personOptions.map((person) => (
+                  <option key={person.value} value={person.value}>{person.label}</option>
+                ))}
               </select>
             </div>
 

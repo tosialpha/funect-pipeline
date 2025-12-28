@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useOrganization } from "@/lib/contexts/organization-context";
+import { getPersonOptionsForOrg, PERSON_CONFIG, AssignedPerson } from "@/lib/constants/person-colors";
 
 interface Todo {
   id: string;
   title: string;
   description?: string;
   completed: boolean;
-  assigned_to: "team" | "veeti" | "alppa";
+  assigned_to: AssignedPerson;
   due_date: string;
   display_order: number;
   screenshot_url?: string;
@@ -23,13 +25,15 @@ interface TaskDetailModalProps {
 }
 
 export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: TaskDetailModalProps) {
+  const { slug } = useOrganization();
+  const personOptions = getPersonOptionsForOrg(slug);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    assigned_to: "team" as "team" | "veeti" | "alppa",
+    assigned_to: "team" as AssignedPerson,
     due_date: "",
     completed: false,
     screenshot_url: "" as string | undefined,
@@ -236,6 +240,8 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
         return { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20", label: "Veeti" };
       case "alppa":
         return { bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/20", label: "Alppa" };
+      case "ilari":
+        return { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20", label: "Ilari" };
       default:
         return { bg: "bg-slate-500/10", text: "text-slate-400", border: "border-slate-500/20", label: "Unassigned" };
     }
@@ -418,12 +424,14 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
             {isEditing ? (
               <select
                 value={formData.assigned_to}
-                onChange={(e) => setFormData({ ...formData, assigned_to: e.target.value as "team" | "veeti" | "alppa" })}
+                onChange={(e) => setFormData({ ...formData, assigned_to: e.target.value as AssignedPerson })}
                 className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               >
-                <option value="team">Team Task</option>
-                <option value="veeti">Veeti</option>
-                <option value="alppa">Alppa</option>
+                {personOptions.map((person) => (
+                  <option key={person.value} value={person.value}>
+                    {person.value === 'team' ? 'Team Task' : person.label}
+                  </option>
+                ))}
               </select>
             ) : (
               <span className={`inline-block px-2.5 py-1 text-sm font-semibold ${badge.bg} ${badge.text} rounded-lg border ${badge.border}`}>
