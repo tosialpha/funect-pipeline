@@ -14,6 +14,7 @@ interface Todo {
   due_date: string;
   display_order: number;
   screenshot_url?: string;
+  organization_id: string;
 }
 
 interface TaskDetailModalProps {

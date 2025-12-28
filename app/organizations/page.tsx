@@ -34,7 +34,8 @@ export default async function OrganizationsPage() {
 
   // If user has exactly one org, redirect directly to it
   if (memberships && memberships.length === 1 && memberships[0].organizations) {
-    const org = memberships[0].organizations as { slug: string };
+    const orgs = memberships[0].organizations;
+    const org = (Array.isArray(orgs) ? orgs[0] : orgs) as { slug: string };
     redirect(`/org/${org.slug}/dashboard`);
   }
 
@@ -71,7 +72,8 @@ export default async function OrganizationsPage() {
 
         <div className="space-y-3">
           {memberships.map((membership) => {
-            const org = membership.organizations as {
+            const orgs = membership.organizations;
+            const org = (Array.isArray(orgs) ? orgs[0] : orgs) as {
               id: string;
               name: string;
               slug: string;
