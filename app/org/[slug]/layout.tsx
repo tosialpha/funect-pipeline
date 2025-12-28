@@ -182,27 +182,6 @@ export default async function OrgLayout({ children, params }: OrgLayoutProps) {
             </nav>
 
             <div className="p-4 border-t border-slate-800">
-              {/* Organization Switcher */}
-              <Link
-                href="/organizations"
-                className="flex items-center gap-2 px-3 py-2 mb-3 text-sm text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-                  />
-                </svg>
-                Switch Organization
-              </Link>
-
               {/* User Info */}
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-xl flex items-center justify-center text-white font-semibold">
