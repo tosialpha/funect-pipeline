@@ -302,7 +302,17 @@ export default function TodosPage() {
     if (!formData.title.trim()) return;
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      alert("Not authenticated");
+      return;
+    }
+
+    if (!organizationId) {
+      alert("No organization ID found");
+      return;
+    }
+
+    console.log("Creating todo with org:", organizationId, "user:", user.id);
 
     setIsUploading(true);
 
@@ -339,6 +349,7 @@ export default function TodosPage() {
 
     if (error) {
       console.error("Error creating todo:", error);
+      alert(`Failed to create task: ${error.message}`);
       setIsUploading(false);
       return;
     }
