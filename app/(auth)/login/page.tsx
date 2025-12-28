@@ -34,7 +34,7 @@ export default async function LoginPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-500">
-          Internal tool for Funect team members only
+          Hello!
         </p>
       </div>
     </div>
