@@ -7,6 +7,7 @@ import { AddProspectModal } from "./add-prospect-modal";
 import { ProspectDetailModal } from "./prospect-detail-modal";
 import { ScheduleDemoModal } from "./schedule-demo-modal";
 import { useDragToScroll } from "@/hooks/useDragToScroll";
+import { motion } from "framer-motion";
 
 type PipelineStage =
   | "not_contacted"
@@ -34,6 +35,8 @@ interface Column {
   count: number;
   prospects: Prospect[];
   color: string;
+  bgColor: string;
+  borderColor: string;
 }
 
 const INITIAL_COLUMNS: Column[] = [
@@ -42,49 +45,63 @@ const INITIAL_COLUMNS: Column[] = [
     title: "Not Contacted",
     count: 0,
     prospects: [],
-    color: "border-slate-400",
+    color: "text-slate-400",
+    bgColor: "bg-slate-500/10",
+    borderColor: "border-l-slate-500",
   },
   {
     id: "cold_called",
     title: "Cold Called",
     count: 0,
     prospects: [],
-    color: "border-blue-500",
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/10",
+    borderColor: "border-l-blue-500",
   },
   {
     id: "first_demo",
     title: "First Demo",
     count: 0,
     prospects: [],
-    color: "border-purple-500",
+    color: "text-purple-400",
+    bgColor: "bg-purple-500/10",
+    borderColor: "border-l-purple-500",
   },
   {
     id: "second_demo",
     title: "Second Demo",
     count: 0,
     prospects: [],
-    color: "border-teal-500",
+    color: "text-cyan-400",
+    bgColor: "bg-cyan-500/10",
+    borderColor: "border-l-cyan-500",
   },
   {
     id: "offer_sent",
     title: "Offer Sent",
     count: 0,
     prospects: [],
-    color: "border-orange-500",
+    color: "text-orange-400",
+    bgColor: "bg-orange-500/10",
+    borderColor: "border-l-orange-500",
   },
   {
     id: "offer_accepted",
-    title: "Offer Accepted",
+    title: "Won",
     count: 0,
     prospects: [],
-    color: "border-green-500",
+    color: "text-emerald-400",
+    bgColor: "bg-emerald-500/10",
+    borderColor: "border-l-emerald-500",
   },
   {
     id: "offer_rejected",
-    title: "Offer Rejected",
+    title: "Lost",
     count: 0,
     prospects: [],
-    color: "border-red-500",
+    color: "text-red-400",
+    bgColor: "bg-red-500/10",
+    borderColor: "border-l-red-500",
   },
 ];
 
@@ -180,7 +197,6 @@ export function KanbanBoard() {
     loadProspects();
   }, [selectedSports, searchQuery]);
 
-  // Close filter dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
@@ -227,12 +243,10 @@ export function KanbanBoard() {
 
     const [movedProspect] = sourceProspects.splice(source.index, 1);
 
-    // Check if moving to a demo stage
     const isDemoStage = destination.droppableId === "first_demo" || destination.droppableId === "second_demo";
     const isMovingToNewStage = source.droppableId !== destination.droppableId;
 
     if (isDemoStage && isMovingToNewStage) {
-      // Show scheduling modal instead of immediately updating
       setScheduleDemoModal({
         isOpen: true,
         prospectId: movedProspect.id,
@@ -241,7 +255,6 @@ export function KanbanBoard() {
         targetStage: destination.droppableId as PipelineStage,
         responsiblePerson: movedProspect.responsible_person,
       });
-      // Don't update the UI yet - wait for the modal to be confirmed or cancelled
       return;
     }
 
@@ -259,7 +272,6 @@ export function KanbanBoard() {
 
     setColumns(newColumns);
 
-    // Update in database
     if (source.droppableId !== destination.droppableId) {
       const { error } = await supabase
         .from("prospects")
@@ -268,14 +280,12 @@ export function KanbanBoard() {
 
       if (error) {
         console.error("Error updating prospect:", error);
-        // Revert on error
         loadProspects();
       }
     }
   };
 
   const handleDemoScheduled = async () => {
-    // Update the prospect's pipeline stage
     if (scheduleDemoModal.prospectId && scheduleDemoModal.targetStage) {
       const { error } = await supabase
         .from("prospects")
@@ -286,7 +296,6 @@ export function KanbanBoard() {
         console.error("Error updating prospect:", error);
       }
 
-      // Reload prospects to reflect the changes
       loadProspects();
     }
 
@@ -295,146 +304,147 @@ export function KanbanBoard() {
 
   return (
     <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-white">
-            Sales Pipeline
-          </h2>
-          <p className="text-slate-400 mt-2">
-            Drag and drop prospects between stages
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Search Bar */}
-          <div className="relative">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search prospects..."
-              className="w-64 pl-10 pr-4 py-2.5 border border-slate-700 rounded-xl bg-[#1A1F2E] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-            />
-            {searchQuery && (
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-white tracking-tight">
+              Sales Pipeline
+            </h1>
+            <p className="text-slate-500 mt-1 text-sm">
+              Track and manage your prospects through the sales process
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="relative">
+              <svg
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search prospects..."
+                className="w-64 pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-800/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Filter */}
+            <div className="relative" ref={filterRef}>
               <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                  selectedSports.length > 0
+                    ? "bg-cyan-500/10 border border-cyan-500/30 text-cyan-400"
+                    : "bg-slate-900/50 border border-slate-800/50 text-slate-400 hover:text-white hover:border-slate-700/50"
+                }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
                 </svg>
+                Filter
+                {selectedSports.length > 0 && (
+                  <span className="px-1.5 py-0.5 text-[10px] bg-cyan-500 text-slate-900 rounded font-semibold">
+                    {selectedSports.length}
+                  </span>
+                )}
               </button>
-            )}
-          </div>
 
-          {/* Sports Filter Dropdown */}
-          <div className="relative" ref={filterRef}>
-            <button
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className={`px-4 py-2.5 border rounded-xl font-medium transition-all flex items-center gap-2 ${
-                selectedSports.length > 0
-                  ? "border-teal-500 bg-teal-500/10 text-teal-400"
-                  : "border-slate-700 bg-[#1A1F2E] text-slate-300 hover:border-slate-600"
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-              Sports
-              {selectedSports.length > 0 && (
-                <span className="px-1.5 py-0.5 text-xs bg-teal-500 text-white rounded-full">
-                  {selectedSports.length}
-                </span>
-              )}
-              <svg className={`w-4 h-4 transition-transform ${isFilterOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {isFilterOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-[#1A1F2E] border border-slate-800 rounded-xl shadow-xl z-50 overflow-hidden">
-                <div className="p-3 border-b border-slate-800 flex items-center justify-between">
-                  <span className="text-sm font-medium text-white">Filter by Sport</span>
-                  {selectedSports.length > 0 && (
-                    <button
-                      onClick={clearFilters}
-                      className="text-xs text-teal-400 hover:text-teal-300 transition-colors"
-                    >
-                      Clear all
-                    </button>
-                  )}
-                </div>
-                <div className="max-h-64 overflow-y-auto p-2">
-                  {sportTypes.length === 0 ? (
-                    <p className="text-sm text-slate-500 p-2">No sports found</p>
-                  ) : (
-                    sportTypes.map((sport) => (
-                      <label
-                        key={sport}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800/50 cursor-pointer transition-colors"
+              {isFilterOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  className="absolute right-0 mt-2 w-64 bg-[#0d1320] border border-slate-800/50 rounded-xl shadow-2xl shadow-black/50 z-50 overflow-hidden"
+                >
+                  <div className="p-3 border-b border-slate-800/50 flex items-center justify-between">
+                    <span className="text-sm font-medium text-white">Filter by Type</span>
+                    {selectedSports.length > 0 && (
+                      <button
+                        onClick={clearFilters}
+                        className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
                       >
-                        <input
-                          type="checkbox"
-                          checked={selectedSports.includes(sport)}
-                          onChange={() => toggleSportFilter(sport)}
-                          className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-teal-500 focus:ring-teal-500 focus:ring-offset-0"
-                        />
-                        <span className="text-sm text-slate-300">{sport}</span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-64 overflow-y-auto scrollbar-thin p-2">
+                    {sportTypes.length === 0 ? (
+                      <p className="text-sm text-slate-500 p-3 text-center">No types found</p>
+                    ) : (
+                      sportTypes.map((sport) => (
+                        <label
+                          key={sport}
+                          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.03] cursor-pointer transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedSports.includes(sport)}
+                            onChange={() => toggleSportFilter(sport)}
+                            className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500/20 focus:ring-offset-0"
+                          />
+                          <span className="text-sm text-slate-300">{sport}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </div>
 
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20 flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Prospect
-          </button>
-        </div>
-      </div>
-
-      {/* Active Filter Chips */}
-      {selectedSports.length > 0 && (
-        <div className="mb-4 flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-slate-400">Filtering by:</span>
-          {selectedSports.map((sport) => (
-            <span
-              key={sport}
-              className="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-500/10 border border-teal-500/30 text-teal-400 rounded-full text-sm"
+            {/* Add Button */}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="btn-primary flex items-center gap-2"
             >
-              {sport}
-              <button
-                onClick={() => toggleSportFilter(sport)}
-                className="hover:text-white transition-colors"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </span>
-          ))}
-          <button
-            onClick={clearFilters}
-            className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
-          >
-            Clear all
-          </button>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Prospect
+            </button>
+          </div>
         </div>
-      )}
+
+        {/* Active Filters */}
+        {selectedSports.length > 0 && (
+          <div className="mt-4 flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-slate-500">Active filters:</span>
+            {selectedSports.map((sport) => (
+              <span
+                key={sport}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-md text-xs font-medium"
+              >
+                {sport}
+                <button
+                  onClick={() => toggleSportFilter(sport)}
+                  className="hover:text-white transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
       <AddProspectModal
         isOpen={isModalOpen}
@@ -457,7 +467,7 @@ export function KanbanBoard() {
           isOpen={scheduleDemoModal.isOpen}
           onClose={() => {
             setScheduleDemoModal({ isOpen: false });
-            loadProspects(); // Reload to restore the original state
+            loadProspects();
           }}
           prospectId={scheduleDemoModal.prospectId}
           prospectName={scheduleDemoModal.prospectName}
@@ -467,118 +477,121 @@ export function KanbanBoard() {
         />
       )}
 
+      {/* Kanban Board */}
       <DragDropContext onDragStart={() => setIsDndDragging(true)} onDragEnd={(result) => { setIsDndDragging(false); onDragEnd(result); }}>
-        <div ref={scrollContainerRef} className="flex gap-4 overflow-x-auto pb-4">
-          {columns.map((column) => (
-            <div
+        <div ref={scrollContainerRef} className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin">
+          {columns.map((column, columnIndex) => (
+            <motion.div
               key={column.id}
-              className="flex-shrink-0 w-80"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: columnIndex * 0.05 }}
+              className="flex-shrink-0 w-[300px]"
             >
-              <div className="bg-[#1A1F2E] rounded-2xl p-4 border border-slate-800">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-1 h-6 rounded-full ${column.color.replace('border-', 'bg-')}`} />
-                    <h3 className="font-semibold text-white">
-                      {column.title}
-                    </h3>
-                    <span className="px-2.5 py-0.5 text-xs font-semibold bg-slate-800 text-slate-300 rounded-lg">
-                      {column.count}
-                    </span>
+              <div className="bg-slate-900/40 rounded-xl overflow-hidden">
+                {/* Column Header */}
+                <div className="p-4 border-b border-white/[0.04]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-2 h-2 rounded-full ${column.bgColor.replace('/10', '')}`} />
+                      <h3 className="font-medium text-white text-sm">
+                        {column.title}
+                      </h3>
+                      <span className={`px-2 py-0.5 text-xs font-semibold rounded-md ${column.bgColor} ${column.color}`}>
+                        {column.count}
+                      </span>
+                    </div>
                   </div>
-                  <button className="text-slate-500 hover:text-slate-300">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                    </svg>
-                  </button>
                 </div>
 
+                {/* Column Content */}
                 <Droppable droppableId={column.id}>
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`space-y-3 min-h-[200px] ${
-                        snapshot.isDraggingOver ? 'bg-slate-800/30 rounded-xl p-2' : ''
+                      className={`p-3 min-h-[400px] transition-colors ${
+                        snapshot.isDraggingOver ? 'bg-cyan-500/5' : ''
                       }`}
                     >
-                      {column.prospects.length === 0 ? (
-                        <div className="text-center py-8 text-slate-500 text-sm">
-                          <p>No prospects</p>
-                          <button
-                            onClick={() => setIsModalOpen(true)}
-                            className="mt-2 text-teal-400 hover:text-teal-300 flex items-center justify-center gap-1 mx-auto transition-colors"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            Add
-                          </button>
-                        </div>
-                      ) : (
-                        column.prospects.map((prospect, index) => (
-                          <Draggable
-                            key={prospect.id}
-                            draggableId={prospect.id}
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                data-no-drag-scroll
-                                onClick={() => {
-                                  setSelectedProspectId(prospect.id);
-                                  setIsDetailModalOpen(true);
-                                }}
-                                className={`bg-[#0F1419] rounded-xl p-4 border-l-4 ${column.color} border border-slate-800 hover:border-slate-700 transition-all cursor-pointer ${
-                                  snapshot.isDragging ? 'shadow-2xl shadow-teal-500/20 ring-2 ring-teal-500 scale-105' : ''
-                                }`}
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-xl flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                                    {prospect.name[0]}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-start justify-between gap-2 mb-1">
-                                      <h4 className="font-semibold text-white text-sm">
+                      <div className="space-y-2.5">
+                        {column.prospects.length === 0 ? (
+                          <div className="text-center py-12">
+                            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-800/50 flex items-center justify-center">
+                              <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                              </svg>
+                            </div>
+                            <p className="text-slate-600 text-sm">No prospects</p>
+                            <button
+                              onClick={() => setIsModalOpen(true)}
+                              className="mt-2 text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-colors"
+                            >
+                              + Add first
+                            </button>
+                          </div>
+                        ) : (
+                          column.prospects.map((prospect, index) => (
+                            <Draggable
+                              key={prospect.id}
+                              draggableId={prospect.id}
+                              index={index}
+                            >
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  data-no-drag-scroll
+                                  onClick={() => {
+                                    setSelectedProspectId(prospect.id);
+                                    setIsDetailModalOpen(true);
+                                  }}
+                                  className={`bg-[#0d1320]/80 rounded-lg p-3.5 border-l-[3px] ${column.borderColor} transition-all cursor-pointer group ${
+                                    snapshot.isDragging ? 'shadow-2xl shadow-cyan-500/10 ring-1 ring-cyan-500/30 scale-[1.02]' : ''
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                                      {prospect.name[0]}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-medium text-white text-sm truncate group-hover:text-cyan-400 transition-colors">
                                         {prospect.name}
                                       </h4>
-                                      <button className="text-slate-500 hover:text-slate-300 transition-colors">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                                        </svg>
-                                      </button>
-                                    </div>
-                                    <p className="text-xs text-slate-400 mb-2">
-                                      {prospect.company}
-                                    </p>
-                                    {prospect.lastActivity && (
-                                      <div className="flex items-center gap-1 text-xs text-slate-500 mb-2">
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        {prospect.lastActivity}
+                                      <p className="text-xs text-slate-500 mt-0.5 truncate">
+                                        {prospect.company}
+                                      </p>
+                                      {prospect.lastActivity && (
+                                        <div className="flex items-center gap-1.5 mt-2 text-[11px] text-slate-600">
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                          </svg>
+                                          {prospect.lastActivity}
+                                        </div>
+                                      )}
+                                      <div className="mt-2.5">
+                                        <span className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded border ${
+                                          prospect.status === 'HIGH' ? 'status-red' :
+                                          prospect.status === 'MEDIUM' ? 'status-orange' : 'status-green'
+                                        }`}>
+                                          {prospect.status}
+                                        </span>
                                       </div>
-                                    )}
-                                    <div className="flex items-center gap-2 mt-2">
-                                      <span className="px-2.5 py-1 text-xs font-semibold bg-purple-500/10 text-purple-400 rounded-lg border border-purple-500/20">
-                                        {prospect.status}
-                                      </span>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))
-                      )}
+                              )}
+                            </Draggable>
+                          ))
+                        )}
+                      </div>
                       {provided.placeholder}
                     </div>
                   )}
                 </Droppable>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </DragDropContext>

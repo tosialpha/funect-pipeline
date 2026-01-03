@@ -38,7 +38,7 @@ export function ProspectsTable({ prospects }: ProspectsTableProps) {
         onSuccess={() => router.refresh()}
       />
 
-      <div className="bg-[#1A1F2E] rounded-2xl border border-slate-800 overflow-hidden">
+      <div className="bg-slate-900/30 backdrop-blur-sm rounded-2xl border border-slate-800/50 overflow-hidden">
         <table className="w-full">
           <thead className="bg-slate-800/50 border-b border-slate-700">
             <tr>
@@ -74,7 +74,7 @@ export function ProspectsTable({ prospects }: ProspectsTableProps) {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="text-xs text-teal-400 hover:text-teal-300 hover:underline transition-colors"
+                          className="text-xs text-cyan-400 hover:text-teal-300 hover:underline transition-colors"
                         >
                           {prospect.website}
                         </a>

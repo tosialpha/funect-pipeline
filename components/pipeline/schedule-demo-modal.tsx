@@ -72,8 +72,8 @@ export function ScheduleDemoModal({
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-[#1A1F2E] rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-slate-800">
-        <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+      <div className="relative bg-slate-900/30 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-slate-800/50">
+        <div className="p-6 border-b border-slate-800/50 flex items-center justify-between">
           <div>
             <h3 className="text-xl font-bold text-white">Schedule {demoTitle}</h3>
             <p className="text-sm text-slate-400 mt-1">{prospectName}</p>
@@ -109,7 +109,7 @@ export function ScheduleDemoModal({
               onChange={(e) =>
                 setFormData({ ...formData, date: e.target.value })
               }
-              className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
             />
           </div>
 
@@ -124,7 +124,7 @@ export function ScheduleDemoModal({
                 onChange={(e) =>
                   setFormData({ ...formData, startTime: e.target.value })
                 }
-                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
               />
             </div>
             <div>
@@ -137,15 +137,15 @@ export function ScheduleDemoModal({
                 onChange={(e) =>
                   setFormData({ ...formData, endTime: e.target.value })
                 }
-                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
               />
             </div>
           </div>
 
-          <div className="bg-teal-500/10 border border-teal-500/20 rounded-xl p-4">
+          <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <svg
-                className="w-5 h-5 text-teal-400 flex-shrink-0 mt-0.5"
+                className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -161,7 +161,7 @@ export function ScheduleDemoModal({
                 <p className="text-sm text-teal-300 font-medium">
                   This will add the demo to your calendar
                 </p>
-                <p className="text-xs text-teal-400/70 mt-1">
+                <p className="text-xs text-cyan-400/70 mt-1">
                   The event will be visible in the Calendar page and linked to this
                   prospect.
                 </p>
@@ -180,7 +180,7 @@ export function ScheduleDemoModal({
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>

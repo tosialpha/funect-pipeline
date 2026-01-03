@@ -146,8 +146,8 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#1A1F2E] rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto border border-slate-800">
-        <div className="sticky top-0 bg-[#1A1F2E] border-b border-slate-800 p-6 flex items-center justify-between">
+      <div className="relative bg-slate-900/30 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto border border-slate-800/50">
+        <div className="sticky top-0 bg-slate-900/30 backdrop-blur-sm border-b border-slate-800/50 p-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white">
             {isEditing ? "Edit Prospect" : "Prospect Details"}
           </h2>
@@ -155,7 +155,7 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="px-4 py-2 text-sm text-teal-400 hover:bg-teal-500/10 rounded-xl font-medium transition-all border border-teal-500/20"
+                className="px-4 py-2 text-sm text-cyan-400 hover:bg-cyan-500/10 rounded-xl font-medium transition-all border border-cyan-500/20"
               >
                 Edit
               </button>
@@ -266,7 +266,7 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
               ) : (
                 <p className="text-white font-medium">
                   {formData.website ? (
-                    <a href={formData.website} target="_blank" rel="noopener noreferrer" className="text-teal-400 hover:text-teal-300 hover:underline">
+                    <a href={formData.website} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-teal-300 hover:underline">
                       {formData.website}
                     </a>
                   ) : (
@@ -316,7 +316,7 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
                 <select
                   value={formData.responsible_person}
                   onChange={(e) => setFormData({ ...formData, responsible_person: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                 >
                   <option value="">Not assigned</option>
                   {personOptions.map((person) => (
@@ -349,7 +349,7 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
                 <select
                   value={formData.pipeline_stage}
                   onChange={(e) => setFormData({ ...formData, pipeline_stage: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                 >
                   <option value="not_contacted">Not Contacted</option>
                   <option value="cold_called">Cold Called</option>
@@ -374,7 +374,7 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
                 <select
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                 >
                   <option value="high">High</option>
                   <option value="medium">Medium</option>
@@ -401,7 +401,7 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
                 <select
                   value={formData.lead_source}
                   onChange={(e) => setFormData({ ...formData, lead_source: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                 >
                   <option value="cold_outreach">Cold Outreach</option>
                   <option value="inbound">Inbound</option>
@@ -427,7 +427,7 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={4}
-                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                   placeholder="Add notes about this prospect..."
                 />
               ) : (
@@ -436,7 +436,7 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+          <div className="flex items-center justify-between pt-4 border-t border-slate-800/50">
             <button
               type="button"
               onClick={handleDelete}
@@ -462,7 +462,7 @@ export function ProspectDetailModal({ prospectId, isOpen, onClose, onSuccess }: 
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="px-5 py-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20 disabled:opacity-50"
+                    className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50"
                   >
                     {isLoading ? "Saving..." : "Save Changes"}
                   </button>

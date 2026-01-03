@@ -598,7 +598,7 @@ export default function TodosPage() {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20 flex items-center gap-2"
+          className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-cyan-500/20 flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -611,8 +611,8 @@ export default function TodosPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-          <div className="relative bg-[#1A1F2E] rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-slate-800 max-h-[90vh] flex flex-col">
-            <div className="p-6 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
+          <div className="relative bg-slate-900/30 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-slate-800/50 max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-slate-800/50 flex items-center justify-between flex-shrink-0">
               <h3 className="text-xl font-bold text-white">Add New Task</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -635,7 +635,7 @@ export default function TodosPage() {
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="Enter task title..."
-                    className="w-full px-4 py-2.5 pr-12 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-2.5 pr-12 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                   />
                   <button
                     type="button"
@@ -643,7 +643,7 @@ export default function TodosPage() {
                     className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${
                       isRecordingTitle
                         ? 'text-red-500 animate-pulse bg-red-500/10'
-                        : 'text-slate-400 hover:text-teal-500 hover:bg-slate-800'
+                        : 'text-slate-400 hover:text-cyan-500 hover:bg-slate-800'
                     }`}
                     title="Voice input"
                   >
@@ -664,7 +664,7 @@ export default function TodosPage() {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
                     placeholder="Add details..."
-                    className="w-full px-4 py-2.5 pr-12 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all resize-none"
+                    className="w-full px-4 py-2.5 pr-12 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all resize-none"
                   />
                   <button
                     type="button"
@@ -672,7 +672,7 @@ export default function TodosPage() {
                     className={`absolute right-3 top-3 p-1.5 rounded-lg transition-all ${
                       isRecordingDescription
                         ? 'text-red-500 animate-pulse bg-red-500/10'
-                        : 'text-slate-400 hover:text-teal-500 hover:bg-slate-800'
+                        : 'text-slate-400 hover:text-cyan-500 hover:bg-slate-800'
                     }`}
                     title="Voice input"
                   >
@@ -722,14 +722,14 @@ export default function TodosPage() {
                     onDrop={handleDrop}
                     className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
                       isDragging
-                        ? 'border-teal-500 bg-teal-500/10'
-                        : 'border-slate-700 bg-[#0F1419] hover:border-teal-500/50 hover:bg-[#0F1419]/80'
+                        ? 'border-cyan-500 bg-cyan-500/10'
+                        : 'border-slate-700 bg-[#0a0f1a] hover:border-cyan-500/50 hover:bg-[#0a0f1a]/80'
                     }`}
                   >
-                    <svg className={`w-8 h-8 mb-2 ${isDragging ? 'text-teal-500' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-8 h-8 mb-2 ${isDragging ? 'text-cyan-500' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className={`text-sm ${isDragging ? 'text-teal-400' : 'text-slate-500'}`}>
+                    <span className={`text-sm ${isDragging ? 'text-cyan-400' : 'text-slate-500'}`}>
                       {isDragging ? 'Drop image here' : 'Drag & drop or click to upload'}
                     </span>
                     <span className="text-xs text-slate-600 mt-1">PNG, JPG up to 5MB</span>
@@ -773,7 +773,7 @@ export default function TodosPage() {
                     type="date"
                     value={formData.dueDate}
                     onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                    className="flex-1 px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                    className="flex-1 px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                   />
                   <button
                     type="button"
@@ -790,13 +790,13 @@ export default function TodosPage() {
               </div>
 
               {/* Add to Calendar Option */}
-              <div className="border-t border-slate-800 pt-4">
+              <div className="border-t border-slate-800/50 pt-4">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.addToCalendar}
                     onChange={(e) => setFormData({ ...formData, addToCalendar: e.target.checked })}
-                    className="w-5 h-5 rounded border-slate-700 bg-[#0F1419] text-teal-500 focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 cursor-pointer"
+                    className="w-5 h-5 rounded border-slate-700 bg-[#0a0f1a] text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-0 cursor-pointer"
                   />
                   <div className="flex-1">
                     <span className="text-sm font-medium text-white">Add to Calendar</span>
@@ -816,7 +816,7 @@ export default function TodosPage() {
                         type="time"
                         value={formData.startTime}
                         onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                        className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                       />
                     </div>
                     <div>
@@ -827,7 +827,7 @@ export default function TodosPage() {
                         type="time"
                         value={formData.endTime}
                         onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                        className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                       />
                     </div>
                   </div>
@@ -845,7 +845,7 @@ export default function TodosPage() {
                 <button
                   onClick={addTodo}
                   disabled={isUploading}
-                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isUploading ? (
                     <span className="flex items-center justify-center gap-2">
@@ -873,10 +873,10 @@ export default function TodosPage() {
                 key={day.date}
                 className="flex-shrink-0 w-80"
               >
-                <div className="bg-[#1A1F2E] rounded-2xl p-4 border border-slate-800">
+                <div className="bg-slate-900/30 backdrop-blur-sm rounded-2xl p-4 border border-slate-800/50">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <div className={`w-1 h-6 rounded-full ${day.isToday ? 'bg-teal-500' : 'bg-slate-600'}`} />
+                      <div className={`w-1 h-6 rounded-full ${day.isToday ? 'bg-cyan-500' : 'bg-slate-600'}`} />
                       <h3 className="font-semibold text-white">
                         {day.label}
                       </h3>
@@ -892,7 +892,7 @@ export default function TodosPage() {
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         className={`space-y-3 min-h-[200px] rounded-xl p-2 -m-2 transition-colors ${
-                          snapshot.isDraggingOver ? 'bg-teal-500/10 ring-2 ring-teal-500/30' : ''
+                          snapshot.isDraggingOver ? 'bg-cyan-500/10 ring-2 ring-cyan-500/30' : ''
                         }`}
                       >
                         {dayTodos.map((todo, index) => {
@@ -916,11 +916,11 @@ export default function TodosPage() {
                                         : provided.draggableProps.style?.transition,
                                     }}
                                     onClick={() => handleTodoClick(todo)}
-                                    className={`bg-[#0F1419] rounded-xl p-4 border-l-4 ${getAssigneeColor(todo.assigned_to)} border border-slate-800 hover:border-slate-700 cursor-grab ${
+                                    className={`bg-[#0a0f1a] rounded-xl p-4 border-l-4 ${getAssigneeColor(todo.assigned_to)} border border-slate-800/50 hover:border-slate-700 cursor-grab ${
                                       todo.completed ? 'opacity-50' : ''
                                     } ${
                                       snapshot.isDragging
-                                        ? 'shadow-2xl shadow-teal-500/20 ring-2 ring-teal-500 z-50'
+                                        ? 'shadow-2xl shadow-cyan-500/20 ring-2 ring-cyan-500 z-50'
                                         : ''
                                     }`}
                                   >
@@ -932,8 +932,8 @@ export default function TodosPage() {
                                         }}
                                         className={`w-5 h-5 rounded-md border-2 flex-shrink-0 flex items-center justify-center transition-all ${
                                           todo.completed
-                                            ? 'bg-teal-500 border-teal-500'
-                                            : 'border-slate-600 hover:border-teal-500'
+                                            ? 'bg-cyan-500 border-cyan-500'
+                                            : 'border-slate-600 hover:border-cyan-500'
                                         }`}
                                       >
                                         {todo.completed && (
@@ -975,7 +975,7 @@ export default function TodosPage() {
                         {provided.placeholder}
                         {dayTodos.length === 0 && (
                           <div className={`text-center py-8 text-slate-500 text-sm rounded-xl border-2 border-dashed ${
-                            snapshot.isDraggingOver ? 'border-teal-500/50 bg-teal-500/5' : 'border-transparent'
+                            snapshot.isDraggingOver ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-transparent'
                           }`}>
                             <p>{snapshot.isDraggingOver ? 'Drop here' : 'No tasks'}</p>
                           </div>

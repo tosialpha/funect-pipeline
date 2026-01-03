@@ -260,8 +260,8 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#1A1F2E] rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto border border-slate-800">
-        <div className="sticky top-0 bg-[#1A1F2E] border-b border-slate-800 p-6 flex items-center justify-between">
+      <div className="relative bg-slate-900/30 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto border border-slate-800/50">
+        <div className="sticky top-0 bg-slate-900/30 backdrop-blur-sm border-b border-slate-800/50 p-6 flex items-center justify-between">
           <h2 className="text-xl font-bold text-white">
             {isEditing ? "Edit Task" : "Task Details"}
           </h2>
@@ -269,7 +269,7 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="px-4 py-2 text-sm text-teal-400 hover:bg-teal-500/10 rounded-xl font-medium transition-all border border-teal-500/20"
+                className="px-4 py-2 text-sm text-cyan-400 hover:bg-cyan-500/10 rounded-xl font-medium transition-all border border-cyan-500/20"
               >
                 Edit
               </button>
@@ -308,7 +308,7 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
-                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
               />
             ) : (
               <p className={`text-white font-medium text-lg ${formData.completed ? 'line-through opacity-50' : ''}`}>
@@ -328,7 +328,7 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={4}
                 placeholder="Add details about this task..."
-                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
               />
             ) : (
               <p className="text-white whitespace-pre-wrap">{formData.description || "-"}</p>
@@ -386,14 +386,14 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
                     onDrop={handleDrop}
                     className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
                       isDragging
-                        ? 'border-teal-500 bg-teal-500/10'
-                        : 'border-slate-700 bg-[#0F1419] hover:border-teal-500/50 hover:bg-[#0F1419]/80'
+                        ? 'border-cyan-500 bg-cyan-500/10'
+                        : 'border-slate-700 bg-[#0a0f1a] hover:border-cyan-500/50 hover:bg-[#0a0f1a]/80'
                     }`}
                   >
-                    <svg className={`w-8 h-8 mb-2 ${isDragging ? 'text-teal-500' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-8 h-8 mb-2 ${isDragging ? 'text-cyan-500' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className={`text-sm ${isDragging ? 'text-teal-400' : 'text-slate-500'}`}>
+                    <span className={`text-sm ${isDragging ? 'text-cyan-400' : 'text-slate-500'}`}>
                       {isDragging ? 'Drop image here' : 'Drag & drop or click to upload'}
                     </span>
                     <span className="text-xs text-slate-600 mt-1">PNG, JPG up to 5MB</span>
@@ -426,7 +426,7 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
               <select
                 value={formData.assigned_to}
                 onChange={(e) => setFormData({ ...formData, assigned_to: e.target.value as AssignedPerson })}
-                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
               >
                 {personOptions.map((person) => (
                   <option key={person.value} value={person.value}>
@@ -452,7 +452,7 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
                 value={formData.due_date}
                 onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                 required
-                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
               />
             ) : (
               <p className="text-white font-medium">{formatDate(formData.due_date)}</p>
@@ -470,7 +470,7 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
                   type="checkbox"
                   checked={formData.completed}
                   onChange={(e) => setFormData({ ...formData, completed: e.target.checked })}
-                  className="w-5 h-5 rounded border-slate-700 bg-[#0F1419] text-teal-500 focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 cursor-pointer"
+                  className="w-5 h-5 rounded border-slate-700 bg-[#0a0f1a] text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-0 cursor-pointer"
                 />
                 <span className="text-white">Mark as completed</span>
               </label>
@@ -486,7 +486,7 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+          <div className="flex items-center justify-between pt-4 border-t border-slate-800/50">
             <button
               type="button"
               onClick={handleDelete}
@@ -523,7 +523,7 @@ export function TaskDetailModal({ todo, isOpen, onClose, onUpdate, onDelete }: T
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="px-5 py-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20 disabled:opacity-50"
+                    className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50"
                   >
                     {isLoading ? "Saving..." : "Save Changes"}
                   </button>

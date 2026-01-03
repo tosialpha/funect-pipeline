@@ -7,7 +7,7 @@ import { PERSON_CONFIG, PERSON_OPTIONS, AssignedPerson } from "@/lib/constants/p
 import { useOrganization } from "@/lib/contexts/organization-context";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const PERSONS: AssignedPerson[] = ["team", "veeti", "alppa"];
 
 interface EventModalData {
@@ -75,7 +75,9 @@ export default function CalendarPage() {
   const getWeekStart = (date: Date) => {
     const d = new Date(date);
     const day = d.getDay();
-    const diff = d.getDate() - day;
+    // Convert Sunday (0) to 7 for Monday-first calculation
+    const dayOffset = day === 0 ? 6 : day - 1;
+    const diff = d.getDate() - dayOffset;
     return new Date(d.setDate(diff));
   };
 
@@ -283,7 +285,7 @@ export default function CalendarPage() {
         </div>
         <div className="flex items-center gap-3">
           {/* Person Filter Toggles */}
-          <div className="flex items-center gap-2 bg-[#1A1F2E] rounded-xl p-1 border border-slate-800">
+          <div className="flex items-center gap-2 bg-slate-900/40 backdrop-blur-sm rounded-xl p-1 border border-white/[0.06]">
             {PERSONS.map((person) => {
               const config = PERSON_CONFIG[person];
               const isVisible = visiblePersons.includes(person);
@@ -310,12 +312,12 @@ export default function CalendarPage() {
             })}
           </div>
 
-          <div className="flex items-center gap-2 bg-[#1A1F2E] rounded-xl p-1 border border-slate-800">
+          <div className="flex items-center gap-2 bg-slate-900/40 backdrop-blur-sm rounded-xl p-1 border border-white/[0.06]">
             <button
               onClick={() => setViewMode("week")}
               className={`px-4 py-2 rounded-lg font-medium transition-all ${
                 viewMode === "week"
-                  ? "bg-teal-500 text-white"
+                  ? "bg-cyan-500 text-white"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -325,7 +327,7 @@ export default function CalendarPage() {
               onClick={() => setViewMode("day")}
               className={`px-4 py-2 rounded-lg font-medium transition-all ${
                 viewMode === "day"
-                  ? "bg-teal-500 text-white"
+                  ? "bg-cyan-500 text-white"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -334,14 +336,14 @@ export default function CalendarPage() {
           </div>
           <button
             onClick={() => setCurrentDate(new Date())}
-            className="px-4 py-2 bg-[#1A1F2E] text-slate-300 rounded-xl font-medium hover:bg-slate-800 transition-all border border-slate-800"
+            className="px-4 py-2 bg-slate-900/40 backdrop-blur-sm text-slate-300 rounded-xl font-medium hover:bg-slate-800 transition-all border border-white/[0.06]"
           >
             Today
           </button>
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigateWeek("prev")}
-              className="p-2 bg-[#1A1F2E] text-slate-300 rounded-lg hover:bg-slate-800 transition-all border border-slate-800"
+              className="p-2 bg-slate-900/40 backdrop-blur-sm text-slate-300 rounded-lg hover:bg-slate-800 transition-all border border-white/[0.06]"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -349,7 +351,7 @@ export default function CalendarPage() {
             </button>
             <button
               onClick={() => navigateWeek("next")}
-              className="p-2 bg-[#1A1F2E] text-slate-300 rounded-lg hover:bg-slate-800 transition-all border border-slate-800"
+              className="p-2 bg-slate-900/40 backdrop-blur-sm text-slate-300 rounded-lg hover:bg-slate-800 transition-all border border-white/[0.06]"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -358,7 +360,7 @@ export default function CalendarPage() {
           </div>
           <button
             onClick={() => setEventModal({ isOpen: true })}
-            className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20 flex items-center gap-2"
+            className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-cyan-500/20 flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -369,9 +371,9 @@ export default function CalendarPage() {
       </div>
 
       {/* Calendar Grid */}
-      <div className="flex-1 bg-[#1A1F2E] rounded-2xl border border-slate-800 overflow-hidden flex flex-col">
+      <div className="flex-1 bg-slate-900/40 rounded-2xl overflow-hidden flex flex-col">
         {/* Day Headers */}
-        <div className="border-b border-slate-800 bg-[#0F1419]">
+        <div className="border-b border-white/[0.04] bg-[#0a0f1a]">
           <div className={`grid ${viewMode === "day" ? "grid-cols-[60px_1fr]" : "grid-cols-[60px_repeat(7,1fr)]"}`}>
             <div className="p-3"></div>
             {weekDays.map((day, i) => {
@@ -380,14 +382,14 @@ export default function CalendarPage() {
                 day.getMonth() === today.getMonth() &&
                 day.getFullYear() === today.getFullYear();
               return (
-                <div key={i} className="p-2 text-center border-l border-slate-800">
+                <div key={i} className="p-2 text-center border-l border-white/[0.04]">
                   <div className="text-xs text-slate-400 mb-1">
-                    {DAYS_OF_WEEK[day.getDay()]}
+                    {DAYS_OF_WEEK[day.getDay() === 0 ? 6 : day.getDay() - 1]}
                   </div>
                   <div
                     className={`text-lg font-semibold ${
                       isToday
-                        ? "w-8 h-8 mx-auto bg-teal-500 text-white rounded-full flex items-center justify-center"
+                        ? "w-8 h-8 mx-auto bg-cyan-500 text-white rounded-full flex items-center justify-center"
                         : "text-white"
                     }`}
                   >
@@ -397,17 +399,17 @@ export default function CalendarPage() {
               );
             })}
           </div>
-          <div className={`grid ${viewMode === "day" ? "grid-cols-[60px_1fr]" : "grid-cols-[60px_repeat(7,1fr)]"} border-t border-slate-800/50`}>
+          <div className={`grid ${viewMode === "day" ? "grid-cols-[60px_1fr]" : "grid-cols-[60px_repeat(7,1fr)]"} border-t border-white/[0.04]`}>
             <div></div>
             {weekDays.map((_, dayIndex) => (
-              <div key={dayIndex} className="flex border-l border-slate-800">
+              <div key={dayIndex} className="flex border-l border-white/[0.04]">
                 {visiblePersons.map((person, personIndex) => {
                   const config = PERSON_CONFIG[person];
                   return (
                     <div
                       key={person}
                       className={`flex-1 py-1 text-center text-xs font-medium ${
-                        personIndex > 0 ? "border-l border-slate-800/50" : ""
+                        personIndex > 0 ? "border-l border-white/[0.03]" : ""
                       }`}
                       style={{ color: config.color }}
                     >
@@ -425,14 +427,14 @@ export default function CalendarPage() {
           <div className={`grid ${viewMode === "day" ? "grid-cols-[60px_1fr]" : "grid-cols-[60px_repeat(7,1fr)]"} relative`}>
             <div>
               {HOURS.map((hour) => (
-                <div key={hour} className="h-[60px] border-b border-slate-800 px-2 text-xs text-slate-500 pt-1">
+                <div key={hour} className="h-[60px] border-b border-white/[0.04] px-2 text-xs text-slate-500 pt-1">
                   {hour.toString().padStart(2, '0')}:00
                 </div>
               ))}
             </div>
 
             {weekDays.map((day, dayIndex) => (
-              <div key={dayIndex} className="relative border-l border-slate-800 flex">
+              <div key={dayIndex} className="relative border-l border-white/[0.04] flex">
                 {visiblePersons.map((person, personIndex) => {
                   const config = PERSON_CONFIG[person];
                   const personEvents = getDayEventsForPerson(day, person);
@@ -440,7 +442,7 @@ export default function CalendarPage() {
                   return (
                     <div
                       key={person}
-                      className={`flex-1 relative ${personIndex > 0 ? "border-l border-slate-800/30" : ""}`}
+                      className={`flex-1 relative ${personIndex > 0 ? "border-l border-white/[0.02]" : ""}`}
                     >
                       {HOURS.map((hour) => (
                         <div
@@ -449,7 +451,7 @@ export default function CalendarPage() {
                             setFormData((prev) => ({ ...prev, assignedTo: person }));
                             handleTimeSlotClick(day, hour);
                           }}
-                          className="h-[60px] border-b border-slate-800 hover:bg-slate-800/30 cursor-pointer transition-colors"
+                          className="h-[60px] border-b border-white/[0.04] hover:bg-slate-800/30 cursor-pointer transition-colors"
                           style={{ backgroundColor: `${config.color}05` }}
                         />
                       ))}
@@ -514,8 +516,8 @@ export default function CalendarPage() {
       {eventModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setEventModal({ isOpen: false })} />
-          <div className="relative bg-[#1A1F2E] rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-slate-800">
-            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+          <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-white/[0.08]">
+            <div className="p-6 border-b border-white/[0.06] flex items-center justify-between">
               <h3 className="text-xl font-bold text-white">
                 {eventModal.event && !eventModal.isEditing ? "Event Details" : eventModal.isEditing ? "Edit Event" : "New Event"}
               </h3>
@@ -548,7 +550,7 @@ export default function CalendarPage() {
                     )}
                   </div>
                   <div className="flex gap-3 pt-2">
-                    <button onClick={() => handleEditEvent(eventModal.event!)} className="flex-1 px-4 py-2.5 bg-teal-500/10 border border-teal-500/20 text-teal-400 hover:bg-teal-500/20 rounded-xl font-medium transition-all">Edit Event</button>
+                    <button onClick={() => handleEditEvent(eventModal.event!)} className="flex-1 px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 rounded-xl font-medium transition-all">Edit Event</button>
                     <button onClick={() => { handleDeleteEvent(eventModal.event!.id); setEventModal({ isOpen: false }); }} className="flex-1 px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 rounded-xl font-medium transition-all">Delete</button>
                   </div>
                 </>
@@ -556,15 +558,15 @@ export default function CalendarPage() {
                 <>
                   <div>
                     <label className="block text-sm font-medium text-slate-400 mb-2">Title *</label>
-                    <input type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Event title..." className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" />
+                    <input type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Event title..." className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-400 mb-2">Description</label>
-                    <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={2} placeholder="Add details..." className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" />
+                    <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={2} placeholder="Add details..." className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-400 mb-2">Event Type *</label>
-                    <select value={formData.eventType} onChange={(e) => setFormData({ ...formData, eventType: e.target.value as EventType })} className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all">
+                    <select value={formData.eventType} onChange={(e) => setFormData({ ...formData, eventType: e.target.value as EventType })} className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all">
                       <option value="task">Task</option>
                       <option value="demo">Demo</option>
                       <option value="meeting">Meeting</option>
@@ -575,11 +577,11 @@ export default function CalendarPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">Date *</label>
-                      <input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" />
+                      <input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">Who is going? *</label>
-                      <select value={formData.assignedTo} onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value as AssignedPerson })} className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all">
+                      <select value={formData.assignedTo} onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value as AssignedPerson })} className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all">
                         {PERSON_OPTIONS.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
                       </select>
                     </div>
@@ -587,16 +589,16 @@ export default function CalendarPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">Start Time *</label>
-                      <input type="time" value={formData.startTime} onChange={(e) => setFormData({ ...formData, startTime: e.target.value })} className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" />
+                      <input type="time" value={formData.startTime} onChange={(e) => setFormData({ ...formData, startTime: e.target.value })} className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">End Time *</label>
-                      <input type="time" value={formData.endTime} onChange={(e) => setFormData({ ...formData, endTime: e.target.value })} className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0F1419] text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" />
+                      <input type="time" value={formData.endTime} onChange={(e) => setFormData({ ...formData, endTime: e.target.value })} className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" />
                     </div>
                   </div>
                   <div className="flex gap-3 pt-4">
                     <button onClick={() => setEventModal({ isOpen: false })} className="flex-1 px-4 py-2.5 border border-slate-700 text-slate-300 hover:bg-slate-800/50 rounded-xl font-medium transition-all">Cancel</button>
-                    <button onClick={eventModal.isEditing ? handleUpdateEvent : handleCreateEvent} className="flex-1 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-teal-500/20">{eventModal.isEditing ? "Save Changes" : "Create Event"}</button>
+                    <button onClick={eventModal.isEditing ? handleUpdateEvent : handleCreateEvent} className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-cyan-500/20">{eventModal.isEditing ? "Save Changes" : "Create Event"}</button>
                   </div>
                 </>
               )}
