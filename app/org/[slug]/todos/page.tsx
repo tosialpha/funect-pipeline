@@ -873,28 +873,33 @@ export default function TodosPage() {
                 key={day.date}
                 className="flex-shrink-0 w-80"
               >
-                <div className="bg-slate-900/30 backdrop-blur-sm rounded-2xl p-4 border border-slate-800/50">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-1 h-6 rounded-full ${day.isToday ? 'bg-cyan-500' : 'bg-slate-600'}`} />
-                      <h3 className="font-semibold text-white">
-                        {day.label}
-                      </h3>
-                      <span className="px-2.5 py-0.5 text-xs font-semibold bg-slate-800 text-slate-300 rounded-lg">
-                        {dayTodos.length}
-                      </span>
+                <div className="bg-slate-900/40 rounded-xl overflow-hidden">
+                  {/* Column Header */}
+                  <div className="p-4 border-b border-white/[0.04]">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-1 h-6 rounded-full ${day.isToday ? 'bg-cyan-500' : 'bg-slate-600'}`} />
+                        <h3 className="font-semibold text-white">
+                          {day.label}
+                        </h3>
+                        <span className="px-2.5 py-0.5 text-xs font-semibold bg-slate-800 text-slate-300 rounded-lg">
+                          {dayTodos.length}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
+                  {/* Column Content */}
                   <Droppable droppableId={day.date}>
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`space-y-3 min-h-[200px] rounded-xl p-2 -m-2 transition-colors ${
-                          snapshot.isDraggingOver ? 'bg-cyan-500/10 ring-2 ring-cyan-500/30' : ''
+                        className={`p-3 min-h-[200px] transition-colors ${
+                          snapshot.isDraggingOver ? 'bg-cyan-500/5' : ''
                         }`}
                       >
+                        <div className="space-y-2.5">
                         {dayTodos.map((todo, index) => {
                             const badge = getAssigneeBadge(todo.assigned_to);
                             return (
@@ -909,14 +914,8 @@ export default function TodosPage() {
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
                                     data-no-drag-scroll
-                                    style={{
-                                      ...provided.draggableProps.style,
-                                      transition: snapshot.isDropAnimating
-                                        ? 'all 0.2s ease'
-                                        : provided.draggableProps.style?.transition,
-                                    }}
                                     onClick={() => handleTodoClick(todo)}
-                                    className={`bg-[#0a0f1a] rounded-xl p-4 border-l-4 ${getAssigneeColor(todo.assigned_to)} border border-slate-800/50 hover:border-slate-700 cursor-grab ${
+                                    className={`bg-[#0a0f1a] rounded-xl p-4 border-l-4 ${getAssigneeColor(todo.assigned_to)} border border-slate-800/50 hover:border-slate-700 cursor-grab transition-all ${
                                       todo.completed ? 'opacity-50' : ''
                                     } ${
                                       snapshot.isDragging
@@ -972,12 +971,11 @@ export default function TodosPage() {
                               </Draggable>
                             );
                           })}
+                        </div>
                         {provided.placeholder}
                         {dayTodos.length === 0 && (
-                          <div className={`text-center py-8 text-slate-500 text-sm rounded-xl border-2 border-dashed ${
-                            snapshot.isDraggingOver ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-transparent'
-                          }`}>
-                            <p>{snapshot.isDraggingOver ? 'Drop here' : 'No tasks'}</p>
+                          <div className="text-center py-12">
+                            <p className="text-slate-600 text-sm">No tasks</p>
                           </div>
                         )}
                       </div>

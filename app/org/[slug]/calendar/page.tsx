@@ -3,12 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { calendarService, CalendarEvent, EventType } from "@/lib/services/calendar.service";
-import { PERSON_CONFIG, PERSON_OPTIONS, AssignedPerson } from "@/lib/constants/person-colors";
+import { PERSON_CONFIG, getPersonOptionsForOrg, AssignedPerson } from "@/lib/constants/person-colors";
 import { useOrganization } from "@/lib/contexts/organization-context";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const PERSONS: AssignedPerson[] = ["team", "veeti", "alppa"];
 
 interface EventModalData {
   isOpen: boolean;
@@ -19,13 +18,15 @@ interface EventModalData {
 }
 
 export default function CalendarPage() {
-  const { organizationId } = useOrganization();
+  const { organizationId, slug } = useOrganization();
+  const personOptions = getPersonOptionsForOrg(slug);
+  const PERSONS: AssignedPerson[] = personOptions.map(p => p.value as AssignedPerson);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"week" | "day">("week");
   const [eventModal, setEventModal] = useState<EventModalData>({ isOpen: false });
-  const [visiblePersons, setVisiblePersons] = useState<AssignedPerson[]>(["team", "veeti", "alppa"]);
+  const [visiblePersons, setVisiblePersons] = useState<AssignedPerson[]>([]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -47,6 +48,11 @@ export default function CalendarPage() {
       gridRef.current.scrollTop = 8 * 60;
     }
   }, []);
+
+  useEffect(() => {
+    const options = getPersonOptionsForOrg(slug);
+    setVisiblePersons(options.map(p => p.value as AssignedPerson));
+  }, [slug]);
 
   const loadEvents = async () => {
     setIsLoading(true);
@@ -582,7 +588,7 @@ export default function CalendarPage() {
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">Who is going? *</label>
                       <select value={formData.assignedTo} onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value as AssignedPerson })} className="w-full px-4 py-2.5 border border-slate-700 rounded-xl bg-[#0a0f1a] text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all">
-                        {PERSON_OPTIONS.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+                        {personOptions.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
                       </select>
                     </div>
                   </div>
